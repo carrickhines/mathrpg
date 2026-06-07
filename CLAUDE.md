@@ -133,3 +133,19 @@ game.js         # (optional) game logic, or inline in index.html
 ## Running
 
 Open `index.html` in a web browser. No build or install step.
+
+## Hosting / deployment
+
+The game is hosted on **GitHub Pages** and playable online (handy for loading it
+on an iPad without copying files around):
+
+- **Repo:** https://github.com/carrickhines/mathrpg
+- **Live URL:** https://carrickhines.github.io/mathrpg/
+- **Source:** GitHub Pages serves the `main` branch root (`/`) — so `index.html`
+  at the repo root *is* the site.
+
+Because Pages publishes `main`, **pushing to `main` deploys.** There's no build
+step; the same self-contained `index.html` that runs from `file://` is what gets
+served. After merging a change, `git push origin main` and Pages rebuilds
+automatically (usually live within a minute). Keep the game a single
+dependency-free HTML file so it works both locally and when served from Pages.
