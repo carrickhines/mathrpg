@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math RPG</title>
+<style>
+  :root {
+    --bg1: #1b2440;
+    --bg2: #2d3a66;
+    --panel: rgba(255, 255, 255, 0.08);
+    --accent: #ffd23f;
+    --good: #4ade80;
+    --bad: #f87171;
+    --hp: #34d399;
+    --hp-bg: #1f2a4d;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  body {
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #app {
+    width: min(900px, 96vw);
+    height: min(640px, 96vh);
+    position: relative;
+  }
+
+  .sound-toggle {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 20;
+    font-size: 22px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--panel);
+    color: #fff;
+    box-shadow: 0 4px 0 rgba(0,0,0,.35);
+    line-height: 1;
+  }
+  .sound-toggle.muted { opacity: 0.55; }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    animation: fadeIn 0.4s ease;
+  }
+  .screen.hidden { display: none; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  h1 {
+    font-size: clamp(40px, 8vw, 72px);
+    margin: 0 0 8px;
+    color: var(--accent);
+    text-shadow: 0 4px 0 #b8860b, 0 6px 16px rgba(0,0,0,.5);
+    letter-spacing: 2px;
+  }
+  .subtitle { font-size: 20px; opacity: .8; margin-bottom: 32px; }
+  .group-label { font-size: 22px; margin: 18px 0 12px; opacity: .9; }
+
+  .btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 16px;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 16px 26px;
+    color: #1b2440;
+    background: var(--accent);
+    box-shadow: 0 5px 0 #b8860b;
+    transition: transform .08s, box-shadow .08s, filter .15s;
+    user-select: none;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 #b8860b; }
+
+  button.choice {
+    background: var(--panel);
+    color: #fff;
+    box-shadow: 0 5px 0 rgba(0,0,0,.35);
+    min-width: 200px;
+  }
+  button.choice .emoji { font-size: 40px; display: block; margin-bottom: 6px; }
+  button.choice .sub { font-size: 14px; opacity: .7; font-weight: normal; display: block; margin-top: 4px; }
+  button.choice.selected { background: var(--accent); color: #1b2440; box-shadow: 0 5px 0 #b8860b; }
+
+  /* ---------- Battle screen ---------- */
+  #battle { justify-content: flex-start; }
+
+  .topbar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .fighter-info { flex: 1; max-width: 320px; }
+  .fighter-info .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; text-align: left; }
+  .fighter-info.foe .name { text-align: right; }
+
+  .hpbar {
+    height: 22px;
+    background: var(--hp-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.5);
+  }
+  .hpbar .fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--hp), #10b981);
+    border-radius: 12px;
+    transition: width .5s ease;
+  }
+  .hpbar .fill.low { background: linear-gradient(90deg, #fbbf24, var(--bad)); }
+
+  .arena {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6%;
+    min-height: 240px;
+  }
+
+  .sprite {
+    font-size: clamp(80px, 16vw, 150px);
+    filter: drop-shadow(0 12px 10px rgba(0,0,0,.45));
+    transition: transform .15s;
+    position: relative;
+  }
+  .sprite.player { animation: idlePlayer 2.4s ease-in-out infinite; }
+  .sprite.foe { animation: idleFoe 2.8s ease-in-out infinite; transform: scaleX(-1); }
+
+  @keyframes idlePlayer { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes idleFoe { 0%,100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-12px); } }
+
+  /* attack lunges */
+  .sprite.player.attack { animation: lungeRight .45s ease; }
+  .sprite.foe.attack { animation: lungeLeft .45s ease; }
+  @keyframes lungeRight {
+    0% { transform: translateX(0); }
+    35% { transform: translateX(180px) rotate(-12deg); }
+    55% { transform: translateX(180px) rotate(-12deg); }
+    100% { transform: translateX(0); }
+  }
+  @keyframes lungeLeft {
+    0% { transform: scaleX(-1) translateX(0); }
+    35% { transform: scaleX(-1) translateX(180px) rotate(-12deg); }
+    55% { transform: scaleX(-1) translateX(180px) rotate(-12deg); }
+    100% { transform: scaleX(-1) translateX(0); }
+  }
+
+  /* getting hit */
+  .sprite.hurt { animation: shake .4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-12px) rotate(6deg); }
+    40% { transform: translateX(12px) rotate(-6deg); }
+    60% { transform: translateX(-8px) rotate(4deg); }
+    80% { transform: translateX(8px) rotate(-4deg); }
+  }
+  .sprite.foe.hurt { animation: shakeFoe .4s ease; }
+  @keyframes shakeFoe {
+    0%,100% { transform: scaleX(-1) translateX(0); }
+    20% { transform: scaleX(-1) translateX(-12px) rotate(6deg); }
+    40% { transform: scaleX(-1) translateX(12px) rotate(-6deg); }
+    60% { transform: scaleX(-1) translateX(-8px) rotate(4deg); }
+    80% { transform: scaleX(-1) translateX(8px) rotate(-4deg); }
+  }
+
+  .sprite.flash { filter: drop-shadow(0 12px 10px rgba(0,0,0,.45)) brightness(3) saturate(0); }
+
+  /* slash effect */
+  .slash {
+    position: absolute;
+    font-size: 90px;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 5;
+  }
+  .slash.go { animation: slashFx .5s ease; }
+  @keyframes slashFx {
+    0% { opacity: 0; transform: scale(.3) rotate(-40deg); }
+    30% { opacity: 1; transform: scale(1.3) rotate(10deg); }
+    100% { opacity: 0; transform: scale(1.6) rotate(30deg); }
+  }
+
+  /* floating damage / status text */
+  .float-text {
+    position: absolute;
+    font-size: 42px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 6;
+    text-shadow: 0 2px 6px rgba(0,0,0,.6);
+    animation: floatUp 1s ease forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 0; transform: translateY(0) scale(.6); }
+    20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-90px) scale(1); }
+  }
+
+  #flashOverlay {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 8;
+  }
+  #flashOverlay.hit { animation: screenFlash .25s ease; }
+  @keyframes screenFlash { 0% { opacity: .5; } 100% { opacity: 0; } }
+
+  /* ---------- Problem panel ---------- */
+  .problem-panel {
+    width: 100%;
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 18px 20px 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    flex-shrink: 0;            /* never let the panel get squeezed into itself */
+  }
+
+  .timer-row { display: flex; align-items: center; gap: 10px; }
+  .timer-track {
+    position: relative;
+    flex: 1;
+    height: 14px;
+    border-radius: 8px;
+    background: rgba(0,0,0,.3);
+    overflow: hidden;
+  }
+  .timer-track .bar {
+    height: 100%;
+    width: 100%;
+    background: var(--good);
+    border-radius: 8px;
+    transition: width 0.05s linear;
+  }
+  .timer-track .bar.super { background: linear-gradient(90deg, #ffd23f, #ff9500); }
+  .timer-track .bar.warn { background: var(--accent); }
+  .timer-track .bar.danger { background: var(--bad); }
+  .fast-marker {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 3px;
+    margin-left: -1px;
+    background: #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,.9);
+  }
+  .super-label {
+    flex: 0 0 auto;
+    width: 96px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--accent);
+    visibility: hidden;
+  }
+  .super-label.show { visibility: visible; animation: superPulse 0.6s ease-in-out infinite; }
+  @keyframes superPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+  .sprite.super { filter: drop-shadow(0 0 16px var(--accent)) drop-shadow(0 12px 10px rgba(0,0,0,.45)); }
+
+  .question { font-size: clamp(40px, 8vw, 64px); font-weight: bold; margin-bottom: 10px; }
+
+  /* ---------- Number blocks (addition only) ---------- */
+  .blocks-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 14px;
+    margin: 4px 0;
+    position: relative;
+    max-height: 172px;       /* bounded so tall towers can't grow into the question */
+  }
+  .blocks-area.hidden { display: none; }
+
+  .tower {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;          /* taller than 5 blocks wraps into a new column */
+    align-content: flex-start;
+    gap: 4px;
+    max-height: 154px;        /* ~5 blocks per column */
+    padding: 6px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.18);
+    cursor: grab;
+    touch-action: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .tower.dragging { cursor: grabbing; transition: none; z-index: 3; }
+  .tower.merged-pop { animation: blockPop 0.45s ease; }
+
+  .block {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25), 0 2px 3px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+  }
+  .block.count, .block.pulse { animation: blockPop 0.3s ease; }
+  @keyframes blockPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+
+  .blocks-plus { font-size: 34px; font-weight: bold; color: var(--accent); align-self: center; }
+  .block-total {
+    align-self: center;
+    min-width: 48px;
+    font-size: 40px;
+    font-weight: bold;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .block-total.show { opacity: 1; }
+  .push-btn { align-self: center; font-size: 18px; padding: 10px 16px; }
+  .push-btn:disabled { filter: grayscale(0.6) brightness(0.9); cursor: default; box-shadow: 0 5px 0 #777; }
+
+  /* give blocks room: shrink the fight scene in addition mode so nothing collides */
+  #battle.with-blocks { overflow-y: auto; }
+  #battle.with-blocks .arena { flex: 0 0 auto; min-height: 0; height: 104px; }
+  #battle.with-blocks .sprite { font-size: clamp(46px, 9vw, 82px); }
+  #battle.with-blocks .question { font-size: clamp(30px, 6vw, 44px); }
+  #battle.with-blocks .hint { display: none; }
+
+  .answer-row { display: flex; gap: 12px; justify-content: center; align-items: center; }
+  #answer {
+    font-family: inherit;
+    font-size: 40px;
+    font-weight: bold;
+    width: 160px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 14px;
+    border: 3px solid transparent;
+    background: rgba(0,0,0,.25);
+    color: #fff;
+    outline: none;
+  }
+  #answer:focus { border-color: var(--accent); }
+  #answer.correct { border-color: var(--good); background: rgba(74,222,128,.2); }
+  #answer.wrong { border-color: var(--bad); background: rgba(248,113,113,.2); animation: shake .3s; }
+
+  .end-emoji { font-size: 120px; margin-bottom: 10px; animation: pop .5s ease; }
+  @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+  .hint { font-size: 16px; opacity: .6; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <button id="muteBtn" class="sound-toggle" title="Sound on/off" aria-label="Sound on/off">🔊</button>
+
+  <!-- MENU -->
+  <section id="menu" class="screen">
+    <h1>Math RPG</h1>
+    <div class="subtitle">Defeat the monster with your math powers!</div>
+
+    <div class="group-label">Choose your power</div>
+    <div class="btn-row" id="trackRow">
+      <button class="choice" data-track="add">
+        <span class="emoji">➕</span>Addition
+        <span class="sub">Ages 5+</span>
+      </button>
+      <button class="choice" data-track="mul">
+        <span class="emoji">✖️</span>Multiplication
+        <span class="sub">Times tables</span>
+      </button>
+    </div>
+
+    <div class="group-label">Choose your difficulty</div>
+    <div class="btn-row" id="modeRow">
+      <button class="choice" data-mode="easy">
+        <span class="emoji">🐢</span>Easy
+        <span class="sub">Relaxed timer</span>
+      </button>
+      <button class="choice" data-mode="normal">
+        <span class="emoji">🐇</span>Normal
+        <span class="sub">Some time pressure</span>
+      </button>
+      <button class="choice" data-mode="expert">
+        <span class="emoji">⚡</span>Expert
+        <span class="sub">Beat the clock!</span>
+      </button>
+    </div>
+
+    <div style="margin-top:34px">
+      <button id="startBtn">Start Battle!</button>
+    </div>
+  </section>
+
+  <!-- BATTLE -->
+  <section id="battle" class="screen hidden">
+    <div class="topbar">
+      <div class="fighter-info player">
+        <div class="name">🦸 You</div>
+        <div class="hpbar"><div class="fill" id="playerHp"></div></div>
+      </div>
+      <div class="fighter-info foe">
+        <div class="name" id="foeName">👾 Monster</div>
+        <div class="hpbar"><div class="fill" id="foeHp"></div></div>
+      </div>
+    </div>
+
+    <div class="arena" id="arena">
+      <div class="sprite player" id="playerSprite">🦸</div>
+      <div class="slash" id="slash">💥</div>
+      <div class="sprite foe" id="foeSprite">👾</div>
+    </div>
+
+    <div class="problem-panel">
+      <div class="timer-row">
+        <div class="timer-track" id="timerTrack">
+          <div class="bar" id="timerBar"></div>
+          <div class="fast-marker" id="fastMarker"></div>
+        </div>
+        <div class="super-label" id="superLabel">⚡ DOUBLE! ⚡</div>
+      </div>
+      <div class="question" id="question">2 + 3</div>
+
+      <div class="blocks-area hidden" id="blocksArea">
+        <div class="tower" id="towerA"></div>
+        <div class="blocks-plus" id="plusSign">+</div>
+        <div class="tower" id="towerB"></div>
+        <div class="block-total" id="blockTotal">0</div>
+        <button class="push-btn" id="pushBtn">👐 Push together</button>
+      </div>
+
+      <div class="answer-row">
+        <input id="answer" type="text" inputmode="numeric" autocomplete="off" />
+        <button id="attackBtn">⚔️ Attack!</button>
+      </div>
+      <div class="hint">⚡ Answer before the white line for a DOUBLE hit!</div>
+    </div>
+
+    <div id="flashOverlay"></div>
+  </section>
+
+  <!-- GAME OVER / WIN -->
+  <section id="endScreen" class="screen hidden">
+    <div class="end-emoji" id="endEmoji">🏆</div>
+    <h1 id="endTitle">Victory!</h1>
+    <div class="subtitle" id="endText">You defeated the monster!</div>
+    <button id="playAgainBtn">Play Again</button>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Sound (synthesized, no audio files) ----------
+  const Sound = (() => {
+    let ctx = null;
+    let muted = (localStorage.getItem("mathrpg_muted") === "1");
+
+    function ensure() {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) ctx = new AC();
+      }
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
+
+    // A single tone with a quick attack/decay envelope, optional pitch slide.
+    function tone(freq, dur, opts = {}) {
+      const c = ensure();
+      if (!c || muted) return;
+      const { type = "square", vol = 0.2, delay = 0, slideTo = null } = opts;
+      const t0 = c.currentTime + delay;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g).connect(c.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.03);
+    }
+
+    // Decaying white noise burst (impacts, poofs).
+    function noise(dur, opts = {}) {
+      const c = ensure();
+      if (!c || muted) return;
+      const { vol = 0.2, delay = 0 } = opts;
+      const n = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const g = c.createGain();
+      g.gain.value = vol;
+      src.connect(g).connect(c.destination);
+      src.start(c.currentTime + delay);
+    }
+
+    return {
+      isMuted: () => muted,
+      toggle() {
+        muted = !muted;
+        localStorage.setItem("mathrpg_muted", muted ? "1" : "0");
+        if (!muted) tone(660, 0.08, { type: "triangle", vol: 0.15 });
+        return muted;
+      },
+      // call once from a user gesture so the audio context is unlocked
+      unlock() { ensure(); },
+
+      click() { tone(660, 0.06, { type: "triangle", vol: 0.12 }); },
+      hit() {
+        tone(190, 0.12, { type: "square", vol: 0.25, slideTo: 90 });
+        noise(0.12, { vol: 0.14 });
+      },
+      super() {
+        tone(523, 0.08, { type: "square", vol: 0.2 });
+        tone(784, 0.08, { type: "square", vol: 0.2, delay: 0.08 });
+        tone(1047, 0.14, { type: "square", vol: 0.22, delay: 0.16 });
+        noise(0.16, { vol: 0.16, delay: 0.16 });
+      },
+      hurt() { tone(150, 0.25, { type: "sawtooth", vol: 0.22, slideTo: 70 }); },
+      wrong() {
+        tone(330, 0.12, { type: "sine", vol: 0.18 });
+        tone(247, 0.18, { type: "sine", vol: 0.18, delay: 0.12 });
+      },
+      ko() {
+        noise(0.25, { vol: 0.2 });
+        tone(420, 0.22, { type: "triangle", vol: 0.18, slideTo: 120 });
+      },
+      win() {
+        [523, 659, 784, 1047].forEach((f, i) =>
+          tone(f, 0.16, { type: "triangle", vol: 0.2, delay: i * 0.14 }));
+      },
+      lose() {
+        [392, 330, 262, 196].forEach((f, i) =>
+          tone(f, 0.24, { type: "triangle", vol: 0.2, delay: i * 0.2 }));
+      },
+      blockTap() { tone(600, 0.08, { type: "triangle", vol: 0.14 }); },
+      count(i) { tone(440 + i * 45, 0.07, { type: "triangle", vol: 0.16 }); },
+      push() { noise(0.3, { vol: 0.12 }); tone(220, 0.3, { type: "sine", vol: 0.12, slideTo: 440 }); },
+    };
+  })();
+
+  // ---------- Config ----------
+  // total = full time bar; fast = answer within this for a SUPER double hit;
+  // penalty = does running out of time let the foe counterattack?
+  const MODES = {
+    easy:   { total: 15000, fast: 5000, penalty: false, label: "Easy" },
+    normal: { total: 14000, fast: 5000, penalty: true,  label: "Normal" },
+    expert: { total: 9000,  fast: 3500, penalty: true,  label: "Expert" },
+  };
+
+  const FOES = [
+    { name: "Slime",   emoji: "🟢", maxHp: 3 },
+    { name: "Bat",     emoji: "🦇", maxHp: 4 },
+    { name: "Ghost",   emoji: "👻", maxHp: 4 },
+    { name: "Dragon",  emoji: "🐉", maxHp: 5 },
+  ];
+
+  const PLAYER_MAX_HP = 5;
+  const PLAYER_DAMAGE = 1;
+  const FOE_DAMAGE = 1;
+
+  // Numberblocks-style colors: each whole number has its own color.
+  const BLOCK_COLORS = {
+    1: "#ff3b30", 2: "#ff9500", 3: "#ffcc00", 4: "#34c759", 5: "#00c7e6",
+    6: "#0a84ff", 7: "#5e5ce6", 8: "#bf5af2", 9: "#ff2d95", 10: "#aeb4bd",
+  };
+  function blockColor(n) {
+    return BLOCK_COLORS[n] || `hsl(${(n * 47) % 360} 80% 55%)`;
+  }
+
+  // ---------- State ----------
+  const state = {
+    track: "add",
+    mode: "normal",
+    playerHp: PLAYER_MAX_HP,
+    foeIndex: 0,
+    foeHp: 0,
+    answer: 0,
+    a: 0,
+    b: 0,
+    merged: false,
+    timerId: null,
+    timerStart: 0,
+    busy: false,
+  };
+
+  // ---------- Element refs ----------
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    menu: $("menu"), battle: $("battle"), end: $("endScreen"),
+    trackRow: $("trackRow"), modeRow: $("modeRow"), startBtn: $("startBtn"),
+    playerHp: $("playerHp"), foeHp: $("foeHp"), foeName: $("foeName"),
+    playerSprite: $("playerSprite"), foeSprite: $("foeSprite"),
+    slash: $("slash"), arena: $("arena"),
+    timerTrack: $("timerTrack"), timerBar: $("timerBar"),
+    fastMarker: $("fastMarker"), superLabel: $("superLabel"),
+    question: $("question"), answer: $("answer"), attackBtn: $("attackBtn"),
+    flashOverlay: $("flashOverlay"),
+    blocksArea: $("blocksArea"), towerA: $("towerA"), towerB: $("towerB"),
+    plusSign: $("plusSign"), pushBtn: $("pushBtn"), blockTotal: $("blockTotal"),
+    endEmoji: $("endEmoji"), endTitle: $("endTitle"), endText: $("endText"),
+    playAgainBtn: $("playAgainBtn"), muteBtn: $("muteBtn"),
+  };
+
+  // reflect saved mute preference on the toggle
+  function renderMute() {
+    el.muteBtn.textContent = Sound.isMuted() ? "🔇" : "🔊";
+    el.muteBtn.classList.toggle("muted", Sound.isMuted());
+  }
+  renderMute();
+
+  // ---------- Menu selection ----------
+  function wireChoices(row, key) {
+    row.addEventListener("click", (e) => {
+      const btn = e.target.closest("button.choice");
+      if (!btn) return;
+      [...row.children].forEach((c) => c.classList.remove("selected"));
+      btn.classList.add("selected");
+      state[key] = btn.dataset[key];
+      Sound.click();
+    });
+  }
+  wireChoices(el.trackRow, "track");
+  wireChoices(el.modeRow, "mode");
+  // defaults
+  el.trackRow.querySelector('[data-track="add"]').classList.add("selected");
+  el.modeRow.querySelector('[data-mode="normal"]').classList.add("selected");
+
+  // ---------- Problem generation ----------
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function newProblem() {
+    let text;
+    if (state.track === "add") {
+      state.a = rand(1, 9); state.b = rand(1, 9);
+      text = `${state.a} + ${state.b}`;
+      state.answer = state.a + state.b;
+    } else {
+      state.a = rand(2, 9); state.b = rand(2, 9);
+      text = `${state.a} × ${state.b}`;
+      state.answer = state.a * state.b;
+    }
+    el.question.textContent = text;
+    el.answer.value = "";
+    el.answer.className = "";
+    renderBlocks();
+    el.answer.focus();
+    startTimer();
+  }
+
+  // ---------- Timer ----------
+  // The Double Attack Timer: the bar is shown in every mode. While the bar is
+  // still in the gold "fast" zone (left of the white marker has not been
+  // reached) a correct answer lands a SUPER double hit.
+  function startTimer() {
+    stopTimer();
+    const mode = MODES[state.mode];
+    state.timerStart = performance.now();
+
+    // place the marker at the boundary between the fast zone and the rest
+    el.fastMarker.style.left = (1 - mode.fast / mode.total) * 100 + "%";
+    el.timerBar.style.width = "100%";
+    el.timerBar.className = "bar super";
+
+    const tick = () => {
+      const elapsed = performance.now() - state.timerStart;
+      const left = Math.max(0, mode.total - elapsed);
+      const pct = (left / mode.total) * 100;
+      const isFast = elapsed < mode.fast;
+      el.timerBar.style.width = pct + "%";
+      el.timerBar.className = "bar" + (isFast ? " super" : pct < 25 ? " danger" : pct < 50 ? " warn" : "");
+      el.superLabel.classList.toggle("show", isFast);
+      if (left <= 0) {
+        stopTimer();
+        if (mode.penalty) timeUp();   // easy mode never punishes a slow answer
+      } else {
+        state.timerId = requestAnimationFrame(tick);
+      }
+    };
+    state.timerId = requestAnimationFrame(tick);
+  }
+
+  // Was the answer given while the fast zone was still active?
+  function isFastAnswer() {
+    return (performance.now() - state.timerStart) < MODES[state.mode].fast;
+  }
+
+  function stopTimer() {
+    if (state.timerId) cancelAnimationFrame(state.timerId);
+    state.timerId = null;
+    el.superLabel.classList.remove("show");
+  }
+
+  // ---------- HP bars ----------
+  function renderHp() {
+    const pPct = (state.playerHp / PLAYER_MAX_HP) * 100;
+    const foe = FOES[state.foeIndex];
+    const fPct = (state.foeHp / foe.maxHp) * 100;
+    el.playerHp.style.width = pPct + "%";
+    el.foeHp.style.width = fPct + "%";
+    el.playerHp.classList.toggle("low", pPct <= 34);
+    el.foeHp.classList.toggle("low", fPct <= 34);
+  }
+
+  // ---------- Number blocks ----------
+  function makeBlock(num, color) {
+    const b = document.createElement("div");
+    b.className = "block";
+    b.style.background = color;
+    b.textContent = num;
+    return b;
+  }
+
+  function fillTower(tower, count, color) {
+    tower.innerHTML = "";
+    for (let i = 1; i <= count; i++) tower.appendChild(makeBlock(i, color));
+  }
+
+  function renderBlocks() {
+    if (state.track !== "add") {
+      el.blocksArea.classList.add("hidden");
+      return;
+    }
+    el.blocksArea.classList.remove("hidden");
+    state.merged = false;
+    el.pushBtn.disabled = false;
+    el.pushBtn.textContent = "👐 Push together";
+    el.plusSign.style.visibility = "visible";
+    el.blockTotal.classList.remove("show");
+    el.blockTotal.textContent = "0";
+    el.towerA.className = "tower";
+    el.towerB.className = "tower";
+    el.towerA.style.cssText = "";
+    el.towerB.style.cssText = "";
+    fillTower(el.towerA, state.a, blockColor(state.a));
+    fillTower(el.towerB, state.b, blockColor(state.b));
+  }
+
+  function mergeTowers() {
+    if (state.merged || state.track !== "add") return;
+    state.merged = true;
+    Sound.push();
+    const sum = state.a + state.b;
+
+    // tower B slides over and fades away
+    el.towerB.style.opacity = "0";
+    el.towerB.style.transform = "translateX(-30px) scale(0.6)";
+    el.plusSign.style.visibility = "hidden";
+
+    // tower A becomes the combined tower, recolored to the sum's color
+    el.towerA.style.transform = "";
+    fillTower(el.towerA, sum, blockColor(sum));
+    el.towerA.classList.remove("merged-pop");
+    void el.towerA.offsetWidth;
+    el.towerA.classList.add("merged-pop");
+
+    el.pushBtn.disabled = true;
+    el.pushBtn.textContent = "✓ Combined!";
+
+    // count up, lighting one block at a time
+    const blocks = [...el.towerA.children];
+    el.blockTotal.classList.add("show");
+    el.blockTotal.textContent = "0";
+    let i = 0;
+    const step = () => {
+      if (i >= blocks.length || !state.merged) return;
+      blocks[i].classList.add("count");
+      el.blockTotal.textContent = String(i + 1);
+      Sound.count(i);
+      i++;
+      setTimeout(step, 170);
+    };
+    setTimeout(step, 250);
+  }
+
+  function rectsOverlap(elA, elB) {
+    const a = elA.getBoundingClientRect();
+    const b = elB.getBoundingClientRect();
+    return !(a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top);
+  }
+
+  // Drag a tower; release it overlapping the other tower to push them together.
+  let dragTower = null, dragStartX = 0, dragStartY = 0, dragMoved = 0;
+  function attachDrag(tower) {
+    tower.addEventListener("pointerdown", (e) => {
+      if (state.merged) return;
+      dragTower = tower;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragMoved = 0;
+      tower.classList.add("dragging");
+      tower.setPointerCapture(e.pointerId);
+    });
+    tower.addEventListener("pointermove", (e) => {
+      if (dragTower !== tower) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      dragMoved = Math.max(dragMoved, Math.hypot(dx, dy));
+      tower.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    tower.addEventListener("pointerup", (e) => {
+      if (dragTower !== tower) return;
+      tower.classList.remove("dragging");
+      dragTower = null;
+      if (dragMoved < 6) {
+        // a tap: pulse the tapped block so it can be counted
+        if (e.target.classList.contains("block")) {
+          e.target.classList.remove("pulse");
+          void e.target.offsetWidth;
+          e.target.classList.add("pulse");
+          Sound.blockTap();
+        }
+        tower.style.transform = "";
+        return;
+      }
+      if (rectsOverlap(el.towerA, el.towerB)) mergeTowers();
+      else tower.style.transform = ""; // snap back
+    });
+  }
+
+  // ---------- Animations ----------
+  function floatText(text, color, atFoe) {
+    const f = document.createElement("div");
+    f.className = "float-text";
+    f.textContent = text;
+    f.style.color = color;
+    const rect = el.arena.getBoundingClientRect();
+    f.style.left = (atFoe ? rect.width * 0.72 : rect.width * 0.18) + "px";
+    f.style.top = rect.height * 0.3 + "px";
+    el.arena.appendChild(f);
+    setTimeout(() => f.remove(), 1000);
+  }
+
+  function playSlash(atFoe) {
+    const rect = el.arena.getBoundingClientRect();
+    el.slash.style.left = (atFoe ? rect.width * 0.68 : rect.width * 0.18) + "px";
+    el.slash.style.top = rect.height * 0.28 + "px";
+    el.slash.textContent = atFoe ? "💥" : "💢";
+    el.slash.classList.remove("go");
+    void el.slash.offsetWidth; // restart animation
+    el.slash.classList.add("go");
+  }
+
+  function screenFlash() {
+    el.flashOverlay.classList.remove("hit");
+    void el.flashOverlay.offsetWidth;
+    el.flashOverlay.classList.add("hit");
+  }
+
+  function animateAttack(attacker, defender, onImpact, onDone) {
+    const atkSprite = attacker === "player" ? el.playerSprite : el.foeSprite;
+    const defSprite = defender === "player" ? el.playerSprite : el.foeSprite;
+    const atFoe = defender === "foe";
+
+    atkSprite.classList.add("attack");
+    setTimeout(() => {
+      playSlash(atFoe);
+      screenFlash();
+      defSprite.classList.add("hurt", "flash");
+      if (onImpact) onImpact();
+      setTimeout(() => defSprite.classList.remove("flash"), 200);
+    }, 180);
+    setTimeout(() => {
+      atkSprite.classList.remove("attack");
+      defSprite.classList.remove("hurt");
+      if (onDone) onDone();
+    }, 600);
+  }
+
+  // ---------- Combat flow ----------
+  function playerAttack() {
+    if (state.busy) return;
+    const val = parseInt(el.answer.value, 10);
+    if (el.answer.value.trim() === "" || isNaN(val)) {
+      el.answer.classList.add("wrong");
+      el.answer.focus();
+      return;
+    }
+    state.busy = true;
+    stopTimer();
+
+    if (val === state.answer) {
+      const isSuper = isFastAnswer();
+      const dmg = isSuper ? PLAYER_DAMAGE * 2 : PLAYER_DAMAGE;
+      el.answer.className = "correct";
+      if (isSuper) el.playerSprite.classList.add("super");
+      animateAttack("player", "foe",
+        () => {
+          state.foeHp = Math.max(0, state.foeHp - dmg);
+          renderHp();
+          if (isSuper) Sound.super(); else Sound.hit();
+          if (isSuper) {
+            floatText("DOUBLE! -" + dmg, "#ffd23f", true);
+            setTimeout(() => { playSlash(true); screenFlash(); }, 160); // second hit
+          } else {
+            floatText("-" + dmg, "#fff", true);
+          }
+        },
+        () => {
+          el.playerSprite.classList.remove("super");
+          if (state.foeHp <= 0) return foeDefeated();
+          state.busy = false;
+          newProblem();
+        }
+      );
+    } else {
+      // wrong answer -> foe gets a hit
+      el.answer.className = "wrong";
+      Sound.wrong();
+      wrongOrTimeout();
+    }
+  }
+
+  function timeUp() {
+    if (state.busy) return;
+    state.busy = true;
+    el.answer.className = "wrong";
+    Sound.wrong();
+    floatText("Too slow!", "#fbbf24", false);
+    wrongOrTimeout();
+  }
+
+  function wrongOrTimeout() {
+    setTimeout(() => {
+      animateAttack("foe", "player",
+        () => {
+          state.playerHp = Math.max(0, state.playerHp - FOE_DAMAGE);
+          renderHp();
+          Sound.hurt();
+          floatText("-" + FOE_DAMAGE, "#f87171", false);
+        },
+        () => {
+          if (state.playerHp <= 0) return gameOver();
+          state.busy = false;
+          newProblem();
+        }
+      );
+    }, 400);
+  }
+
+  function foeDefeated() {
+    Sound.ko();
+    floatText("KO!", "#ffd23f", true);
+    el.foeSprite.style.transition = "transform .6s, opacity .6s";
+    el.foeSprite.style.transform = "scaleX(-1) scale(0) rotate(360deg)";
+    el.foeSprite.style.opacity = "0";
+
+    setTimeout(() => {
+      state.foeIndex++;
+      if (state.foeIndex >= FOES.length) return win();
+      setupFoe();
+      el.foeSprite.style.transition = "transform .5s, opacity .5s";
+      el.foeSprite.style.transform = "scaleX(-1) scale(1)";
+      el.foeSprite.style.opacity = "1";
+      floatText("New foe!", "#fff", true);
+      state.busy = false;
+      newProblem();
+    }, 900);
+  }
+
+  function setupFoe() {
+    const foe = FOES[state.foeIndex];
+    state.foeHp = foe.maxHp;
+    el.foeSprite.textContent = foe.emoji;
+    el.foeName.textContent = foe.emoji + " " + foe.name;
+    renderHp();
+  }
+
+  // ---------- Screen transitions ----------
+  function show(screen) {
+    [el.menu, el.battle, el.end].forEach((s) => s.classList.add("hidden"));
+    screen.classList.remove("hidden");
+  }
+
+  function startGame() {
+    Sound.unlock();
+    Sound.click();
+    state.playerHp = PLAYER_MAX_HP;
+    state.foeIndex = 0;
+    state.busy = false;
+    el.foeSprite.style.transform = "scaleX(-1) scale(1)";
+    el.foeSprite.style.opacity = "1";
+    setupFoe();
+    renderHp();
+    el.battle.classList.toggle("with-blocks", state.track === "add");
+    show(el.battle);
+    newProblem();
+  }
+
+  function win() {
+    stopTimer();
+    el.endEmoji.textContent = "🏆";
+    el.endTitle.textContent = "Victory!";
+    el.endText.textContent = "You defeated every monster. You're a math hero!";
+    Sound.win();
+    show(el.end);
+  }
+
+  function gameOver() {
+    stopTimer();
+    el.endEmoji.textContent = "💀";
+    el.endTitle.textContent = "Game Over";
+    el.endText.textContent = "The monster got you! Want to try again?";
+    Sound.lose();
+    show(el.end);
+  }
+
+  // ---------- Events ----------
+  el.startBtn.addEventListener("click", startGame);
+  el.playAgainBtn.addEventListener("click", () => { Sound.click(); show(el.menu); });
+  el.attackBtn.addEventListener("click", playerAttack);
+  el.answer.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") playerAttack();
+  });
+  el.muteBtn.addEventListener("click", () => { Sound.toggle(); renderMute(); });
+  el.pushBtn.addEventListener("click", mergeTowers);
+  attachDrag(el.towerA);
+  attachDrag(el.towerB);
+
+  show(el.menu);
+})();
+</script>
+</body>
+</html>
