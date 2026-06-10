@@ -37,20 +37,26 @@ To help the younger son, the addition track shows each operand as a stack of
 counted, colored blocks — **Numberblocks**-style, and meant to mirror the
 physical math blocks he has at home:
 
-- Each operand renders as its own tower; every block is numbered (1, 2, 3 …) so
-  each block can be referenced and counted individually.
+- Each operand renders as its own tower of plain colored blocks (no numbers
+  printed on them — the child counts the physical blocks themselves).
 - Each whole number has its own color (1 = red, 2 = orange, 3 = yellow, …),
-  matching the Numberblocks convention.
+  matching the Numberblocks convention. The blocks are deliberately big and
+  easy to tap.
+- Each tower is a CSS grid that fills top-to-bottom, ~3 blocks per column, then
+  wraps into a new column (so tall towers stay short rather than overflowing).
 - The towers are **draggable**. The child can physically push one tower onto the
   other to combine them, or press the **"Push together"** button.
-- On combining, the two towers merge into a single tower, recolored to the
-  **sum's** color, and the game counts the blocks up one at a time (just like
-  counting real blocks) to reveal the total. The child then types the answer.
+- On combining, the second tower's blocks move onto the first into a single
+  combined tower. **Each operand keeps its own color**, so the two addends stay
+  visually distinct in the merged stack. The game then lights the blocks up one
+  at a time (just like counting real blocks) to pace the counting.
+- The total is **never shown** — combining counts/highlights the blocks but does
+  not reveal the answer. The child counts the combined tower and types the sum.
 - Tapping an individual block makes it "pop" so it's easy to count along.
 
-This is a learning aid, not an autosolve: combining shows/counts the total, but
-the player still enters the answer to attack. The blocks area only appears on the
-addition track (it's hidden for multiplication).
+This is a learning aid, not an autosolve: combining helps the child count, but
+the player still works out and enters the answer to attack. The blocks area only
+appears on the addition track (it's hidden for multiplication).
 
 ## Difficulty modes
 

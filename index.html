@@ -39,14 +39,15 @@
 
   #app {
     width: min(900px, 96vw);
-    height: min(640px, 96vh);
+    height: min(720px, 96vh);
     position: relative;
   }
 
   .sound-toggle {
     position: absolute;
     top: 8px;
-    right: 8px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 20;
     font-size: 22px;
     padding: 8px 10px;
@@ -113,7 +114,7 @@
   button.choice.selected { background: var(--accent); color: #1b2440; box-shadow: 0 5px 0 #b8860b; }
 
   /* ---------- Battle screen ---------- */
-  #battle { justify-content: flex-start; }
+  #battle { justify-content: flex-start; padding: 12px 16px; }
 
   .topbar {
     width: 100%;
@@ -304,23 +305,28 @@
   /* ---------- Number blocks (addition only) ---------- */
   .blocks-area {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 14px;
-    margin: 4px 0;
+    flex-direction: column;   /* towers row on top, push button on its own line */
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
     position: relative;
-    max-height: 172px;       /* bounded so tall towers can't grow into the question */
   }
   .blocks-area.hidden { display: none; }
 
-  .tower {
+  .blocks-row {
     display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;          /* taller than 5 blocks wraps into a new column */
-    align-content: flex-start;
-    gap: 4px;
-    max-height: 154px;        /* ~5 blocks per column */
+    flex-wrap: wrap;
+    align-items: center;      /* keeps the + centered against the towers */
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .tower {
+    display: grid;
+    grid-auto-flow: column;   /* fill top-to-bottom, then start a new column */
+    grid-template-rows: repeat(3, 38px);   /* ~3 big blocks per column, then wrap */
+    grid-auto-columns: 38px;
+    gap: 5px;
     padding: 6px;
     border-radius: 12px;
     background: rgba(0, 0, 0, 0.18);
@@ -332,13 +338,13 @@
   .tower.merged-pop { animation: blockPop 0.45s ease; }
 
   .block {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 22px;
     font-weight: bold;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
@@ -350,24 +356,16 @@
   @keyframes blockPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
   .blocks-plus { font-size: 34px; font-weight: bold; color: var(--accent); align-self: center; }
-  .block-total {
-    align-self: center;
-    min-width: 48px;
-    font-size: 40px;
-    font-weight: bold;
-    color: var(--accent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .block-total.show { opacity: 1; }
   .push-btn { align-self: center; font-size: 18px; padding: 10px 16px; }
   .push-btn:disabled { filter: grayscale(0.6) brightness(0.9); cursor: default; box-shadow: 0 5px 0 #777; }
 
   /* give blocks room: shrink the fight scene in addition mode so nothing collides */
   #battle.with-blocks { overflow-y: auto; }
-  #battle.with-blocks .arena { flex: 0 0 auto; min-height: 0; height: 104px; }
-  #battle.with-blocks .sprite { font-size: clamp(46px, 9vw, 82px); }
-  #battle.with-blocks .question { font-size: clamp(30px, 6vw, 44px); }
+  #battle.with-blocks .topbar { margin-bottom: 4px; }
+  #battle.with-blocks .arena { flex: 0 0 auto; min-height: 0; height: 80px; }
+  #battle.with-blocks .sprite { font-size: clamp(44px, 8vw, 76px); }
+  #battle.with-blocks .question { font-size: clamp(28px, 5vw, 40px); margin-bottom: 4px; }
+  #battle.with-blocks .problem-panel { padding: 14px 18px 16px; gap: 7px; }
   #battle.with-blocks .hint { display: none; }
 
   .answer-row { display: flex; gap: 12px; justify-content: center; align-items: center; }
@@ -424,9 +422,9 @@
   .key:hover { filter: brightness(1.15); }
   .key:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
 
-  /* addition mode is space-tight (blocks above), so shrink the pad a little */
-  #battle.with-blocks .keypad { gap: 8px; margin-top: 6px; }
-  #battle.with-blocks .key { font-size: 24px; padding: 11px 0; }
+  /* addition mode has the blocks above, so trim the pad only slightly */
+  #battle.with-blocks .keypad { gap: 9px; margin-top: 6px; }
+  #battle.with-blocks .key { font-size: 28px; padding: 12px 0; }
 
   .end-emoji { font-size: 120px; margin-bottom: 10px; animation: pop .5s ease; }
   @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
@@ -507,10 +505,11 @@
       <div class="question" id="question">2 + 3</div>
 
       <div class="blocks-area hidden" id="blocksArea">
-        <div class="tower" id="towerA"></div>
-        <div class="blocks-plus" id="plusSign">+</div>
-        <div class="tower" id="towerB"></div>
-        <div class="block-total" id="blockTotal">0</div>
+        <div class="blocks-row">
+          <div class="tower" id="towerA"></div>
+          <div class="blocks-plus" id="plusSign">+</div>
+          <div class="tower" id="towerB"></div>
+        </div>
         <button class="push-btn" id="pushBtn">👐 Push together</button>
       </div>
 
@@ -708,7 +707,7 @@
     keypad: $("keypad"), backBtn: $("backBtn"),
     flashOverlay: $("flashOverlay"),
     blocksArea: $("blocksArea"), towerA: $("towerA"), towerB: $("towerB"),
-    plusSign: $("plusSign"), pushBtn: $("pushBtn"), blockTotal: $("blockTotal"),
+    plusSign: $("plusSign"), pushBtn: $("pushBtn"),
     endEmoji: $("endEmoji"), endTitle: $("endTitle"), endText: $("endText"),
     playAgainBtn: $("playAgainBtn"), muteBtn: $("muteBtn"),
   };
@@ -814,17 +813,19 @@
   }
 
   // ---------- Number blocks ----------
-  function makeBlock(num, color) {
+  function makeBlock(color) {
     const b = document.createElement("div");
     b.className = "block";
     b.style.background = color;
-    b.textContent = num;
     return b;
   }
 
   function fillTower(tower, count, color) {
     tower.innerHTML = "";
-    for (let i = 1; i <= count; i++) tower.appendChild(makeBlock(i, color));
+    // Use as many rows as we have blocks, capped at 3 — so a short tower stays
+    // short instead of reserving empty rows, and a tall one wraps into columns.
+    tower.style.gridTemplateRows = `repeat(${Math.min(count, 3) || 1}, 38px)`;
+    for (let i = 1; i <= count; i++) tower.appendChild(makeBlock(color));
   }
 
   function renderBlocks() {
@@ -837,8 +838,6 @@
     el.pushBtn.disabled = false;
     el.pushBtn.textContent = "👐 Push together";
     el.plusSign.style.visibility = "visible";
-    el.blockTotal.classList.remove("show");
-    el.blockTotal.textContent = "0";
     el.towerA.className = "tower";
     el.towerB.className = "tower";
     el.towerA.style.cssText = "";
@@ -851,16 +850,20 @@
     if (state.merged || state.track !== "add") return;
     state.merged = true;
     Sound.push();
-    const sum = state.a + state.b;
 
-    // tower B slides over and fades away
-    el.towerB.style.opacity = "0";
-    el.towerB.style.transform = "translateX(-30px) scale(0.6)";
     el.plusSign.style.visibility = "hidden";
 
-    // tower A becomes the combined tower, recolored to the sum's color
+    // Tower B's blocks move onto tower A, each keeping its own color and its
+    // own number so the two operands stay visually distinct in the combined
+    // tower. Nothing prints the total, so the child has to count the blocks to
+    // find the sum — the answer is never given away.
     el.towerA.style.transform = "";
-    fillTower(el.towerA, sum, blockColor(sum));
+    const sum = state.a + state.b;
+    el.towerA.style.gridTemplateRows = `repeat(${Math.min(sum, 3) || 1}, 38px)`;
+    while (el.towerB.firstChild) {
+      el.towerA.appendChild(el.towerB.firstChild);
+    }
+    el.towerB.style.display = "none";   // now empty; hide the leftover box
     el.towerA.classList.remove("merged-pop");
     void el.towerA.offsetWidth;
     el.towerA.classList.add("merged-pop");
@@ -868,15 +871,12 @@
     el.pushBtn.disabled = true;
     el.pushBtn.textContent = "✓ Combined!";
 
-    // count up, lighting one block at a time
+    // count up, lighting one block at a time (no total shown)
     const blocks = [...el.towerA.children];
-    el.blockTotal.classList.add("show");
-    el.blockTotal.textContent = "0";
     let i = 0;
     const step = () => {
       if (i >= blocks.length || !state.merged) return;
       blocks[i].classList.add("count");
-      el.blockTotal.textContent = String(i + 1);
       Sound.count(i);
       i++;
       setTimeout(step, 170);
