@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Headless screenshots of Math RPG's screens, driven through the real game.
+
+Usage:
+    .verify/venv/bin/python .verify/shots.py [width height]
+
+Reuses the system Firefox via the bundled geckodriver. Writes PNGs to
+.verify/shots/. Each screen is captured after its entry animation settles so
+nothing is caught mid-fade.
+"""
+import os, sys, time
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.common.by import By
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+OUT = os.path.join(HERE, "shots")
+PAGE = "file://" + os.path.join(ROOT, "index.html")
+
+W = int(sys.argv[1]) if len(sys.argv) > 1 else 960
+H = int(sys.argv[2]) if len(sys.argv) > 2 else 820
+
+os.makedirs(OUT, exist_ok=True)
+
+opts = Options()
+opts.add_argument("--headless")
+opts.add_argument(f"--width={W}")
+opts.add_argument(f"--height={H}")
+service = Service(executable_path=os.path.join(HERE, "geckodriver"), log_output=os.devnull)
+d = webdriver.Firefox(options=opts, service=service)
+# set_window_size sets the OUTER size; correct it so the inner viewport is W x H
+d.get(PAGE)
+iw, ih = d.execute_script("return [window.innerWidth, window.innerHeight]")
+d.set_window_size(W + (W - iw), H + (H - ih))
+
+
+def shot(name):
+    path = os.path.join(OUT, name + ".png")
+    d.save_screenshot(path)
+    print("wrote", os.path.relpath(path, ROOT))
+
+
+def click(sel):
+    d.find_element(By.CSS_SELECTOR, sel).click()
+
+
+def load():
+    d.get(PAGE)
+    time.sleep(0.7)  # let the fadeIn settle
+
+
+try:
+    # 1. Menu
+    load()
+    shot("menu")
+
+    # 2. Multiplication battle (no blocks)
+    click('[data-track="mul"]')
+    click('[data-mode="normal"]')
+    click('#startBtn')
+    time.sleep(1.0)  # battle fade + first problem
+    shot("battle-mul")
+
+    # 3. Addition battle (number blocks visible), then push the towers together
+    load()
+    click('[data-track="add"]')
+    click('[data-mode="easy"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-add")
+    click('#pushBtn')
+    time.sleep(1.6)  # block count-up animation
+    shot("battle-add-merged")
+
+    # 4. Victory / Game-over screens. These need many turns to reach naturally,
+    #    so just reveal the static end screen to verify its layout.
+    d.execute_script("""
+        document.getElementById('battle').classList.add('hidden');
+        document.getElementById('menu').classList.add('hidden');
+        var e=document.getElementById('endScreen'); e.classList.remove('hidden');
+        document.getElementById('endEmoji').textContent='🏆';
+        document.getElementById('endTitle').textContent='Victory!';
+        document.getElementById('endText').textContent="You defeated every monster. You're a math hero!";
+    """)
+    time.sleep(1.2)  # let the end screen fade in fully
+    shot("end-win")
+finally:
+    d.quit()

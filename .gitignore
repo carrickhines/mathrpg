@@ -1,2 +1,8 @@
 # Local Claude Code config (machine-specific, not for publishing)
 .claude/
+
+# Headless-screenshot tooling: keep the scripts, ignore the heavy/generated bits
+.verify/venv/
+.verify/geckodriver
+.verify/*.tar.gz
+.verify/shots/
