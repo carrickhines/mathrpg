@@ -10,14 +10,19 @@
 <title>Math RPG</title>
 <style>
   :root {
-    --bg1: #1b2440;
-    --bg2: #2d3a66;
-    --panel: rgba(255, 255, 255, 0.08);
+    --sky-top: #241544;
+    --sky-mid: #3a1f5c;
+    --sky-low: #5b2a63;
+    --horizon: #ff6fa5;       /* warm dusk glow at the arena floor */
+    --panel: rgba(15, 8, 30, 0.42);
     --accent: #ffd23f;
-    --good: #4ade80;
-    --bad: #f87171;
-    --hp: #34d399;
-    --hp-bg: #1f2a4d;
+    --accent-2: #d99312;      /* deeper gold for the button "lip" */
+    --good: #5ce8a0;          /* you / hero */
+    --bad: #ff5e7e;           /* foe / danger */
+    --ink: #1b1230;           /* dark text on gold buttons */
+    --display: "Arial Rounded MT Bold", "Baloo 2", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    --body: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
   }
 
   * { box-sizing: border-box; }
@@ -25,13 +30,14 @@
   html, body {
     margin: 0;
     height: 100%;
-    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    font-family: var(--body);
     color: #fff;
     overflow: hidden;
   }
 
   body {
-    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    background:
+      radial-gradient(120% 90% at 50% 0%, #1d1336 0%, #0d0820 70%, #07040f 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -41,22 +47,41 @@
     width: min(900px, 96vw);
     height: min(720px, 96vh);
     position: relative;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+    /* twilight quest arena: starfield + warm horizon glow over a violet sky */
+    background:
+      radial-gradient(2px 2px at 15% 18%, rgba(255,255,255,.75), transparent 60%),
+      radial-gradient(2px 2px at 72% 14%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(1.5px 1.5px at 40% 28%, rgba(255,255,255,.6), transparent 60%),
+      radial-gradient(1.5px 1.5px at 86% 33%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(2px 2px at 28% 10%, rgba(255,255,255,.5), transparent 60%),
+      radial-gradient(1.5px 1.5px at 58% 22%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(125% 75% at 50% 120%, var(--horizon) 0%, rgba(255,111,165,0) 55%),
+      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 58%, var(--sky-low) 100%);
   }
 
   .sound-toggle {
     position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 12px;
+    right: 12px;
     z-index: 20;
     font-size: 22px;
-    padding: 8px 10px;
-    border-radius: 12px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
     background: var(--panel);
     color: #fff;
-    box-shadow: 0 4px 0 rgba(0,0,0,.35);
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 4px 0 rgba(0,0,0,.35), 0 6px 14px rgba(0,0,0,.3);
     line-height: 1;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    transition: transform .08s, filter .15s;
   }
+  .sound-toggle:active { transform: translateY(3px); }
   .sound-toggle.muted { opacity: 0.55; }
 
   .screen {
@@ -75,43 +100,83 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
   h1 {
-    font-size: clamp(40px, 8vw, 72px);
-    margin: 0 0 8px;
+    font-family: var(--display);
+    font-size: clamp(44px, 8.5vw, 76px);
+    margin: 0 0 6px;
     color: var(--accent);
-    text-shadow: 0 4px 0 #b8860b, 0 6px 16px rgba(0,0,0,.5);
-    letter-spacing: 2px;
+    text-shadow:
+      0 3px 0 var(--accent-2),
+      0 5px 0 #9a6a0c,
+      0 10px 22px rgba(0,0,0,.55);
+    letter-spacing: 1px;
+    line-height: 1;
   }
-  .subtitle { font-size: 20px; opacity: .8; margin-bottom: 32px; }
-  .group-label { font-size: 22px; margin: 18px 0 12px; opacity: .9; }
+  .subtitle {
+    font-size: 19px;
+    color: rgba(255,255,255,.78);
+    margin-bottom: 30px;
+    max-width: 30ch;
+  }
+  .group-label {
+    font-family: var(--display);
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 18px 0 12px;
+    color: var(--accent);
+    opacity: .92;
+  }
+  .group-label::before, .group-label::after {
+    content: "";
+    display: inline-block;
+    width: 26px;
+    height: 2px;
+    margin: 0 12px;
+    vertical-align: middle;
+    background: linear-gradient(90deg, transparent, var(--accent));
+    opacity: .55;
+  }
+  .group-label::after { transform: scaleX(-1); }
 
   .btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 
   button {
-    font-family: inherit;
+    font-family: var(--display);
     cursor: pointer;
     border: none;
     border-radius: 16px;
     font-size: 22px;
     font-weight: bold;
-    padding: 16px 26px;
-    color: #1b2440;
-    background: var(--accent);
-    box-shadow: 0 5px 0 #b8860b;
+    padding: 16px 28px;
+    color: var(--ink);
+    background: linear-gradient(180deg, #ffe27a, var(--accent));
+    box-shadow: 0 5px 0 var(--accent-2), 0 9px 18px rgba(0,0,0,.35);
     transition: transform .08s, box-shadow .08s, filter .15s;
     user-select: none;
   }
-  button:hover { filter: brightness(1.08); }
-  button:active { transform: translateY(4px); box-shadow: 0 1px 0 #b8860b; }
+  button:hover { filter: brightness(1.06); }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-2), 0 4px 10px rgba(0,0,0,.3); }
+
+  #startBtn { font-size: 26px; padding: 18px 40px; letter-spacing: .5px; }
 
   button.choice {
     background: var(--panel);
     color: #fff;
-    box-shadow: 0 5px 0 rgba(0,0,0,.35);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 9px 18px rgba(0,0,0,.28);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     min-width: 200px;
   }
   button.choice .emoji { font-size: 40px; display: block; margin-bottom: 6px; }
-  button.choice .sub { font-size: 14px; opacity: .7; font-weight: normal; display: block; margin-top: 4px; }
-  button.choice.selected { background: var(--accent); color: #1b2440; box-shadow: 0 5px 0 #b8860b; }
+  button.choice .sub { font-family: var(--body); font-size: 14px; opacity: .7; font-weight: normal; display: block; margin-top: 4px; }
+  button.choice.selected {
+    background: linear-gradient(180deg, #ffe27a, var(--accent));
+    color: var(--ink);
+    border-color: transparent;
+    box-shadow: 0 5px 0 var(--accent-2), 0 0 0 3px rgba(255,210,63,.35), 0 9px 18px rgba(0,0,0,.32);
+  }
+  button.choice.selected .sub { opacity: .85; }
 
   /* ---------- Battle screen ---------- */
   #battle { justify-content: flex-start; padding: 12px 16px; }
@@ -123,27 +188,46 @@
     align-items: center;
     gap: 16px;
     margin-bottom: 8px;
+    padding-right: 52px;   /* clear the top-right mute button */
   }
 
   .fighter-info { flex: 1; max-width: 320px; }
-  .fighter-info .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; text-align: left; }
+  .fighter-info .name {
+    font-family: var(--display);
+    font-size: 18px;
+    margin-bottom: 6px;
+    text-align: left;
+    text-shadow: 0 2px 4px rgba(0,0,0,.5);
+  }
   .fighter-info.foe .name { text-align: right; }
 
-  .hpbar {
-    height: 22px;
-    background: var(--hp-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,.5);
+  /* HP as countable pips: hearts for the hero, orbs for the foe — true to the
+     small integer HP values and doubles as counting practice. */
+  .pips { display: flex; gap: 7px; min-height: 26px; }
+  .pips.foe { justify-content: flex-end; }
+  .pip {
+    width: 25px;
+    height: 25px;
+    transition: opacity .3s ease, transform .3s ease;
   }
-  .hpbar .fill {
-    height: 100%;
-    width: 100%;
-    background: linear-gradient(90deg, var(--hp), #10b981);
-    border-radius: 12px;
-    transition: width .5s ease;
+  .pip.heart {
+    background: var(--good);
+    -webkit-mask: var(--heart) center / contain no-repeat;
+    mask: var(--heart) center / contain no-repeat;
+    filter: drop-shadow(0 0 5px rgba(92,232,160,.6)) drop-shadow(0 2px 2px rgba(0,0,0,.4));
   }
-  .hpbar .fill.low { background: linear-gradient(90deg, #fbbf24, var(--bad)); }
+  .pip.orb {
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff9bb2, var(--bad) 65%);
+    box-shadow: 0 0 6px rgba(255,94,126,.6), inset 0 -3px 4px rgba(0,0,0,.3);
+  }
+  .pip.empty {
+    background: rgba(255,255,255,.16);
+    box-shadow: none;
+    filter: none;
+    transform: scale(.82);
+  }
+  .pip.orb.empty { background: rgba(255,255,255,.14); }
 
   .arena {
     position: relative;
@@ -155,6 +239,23 @@
     padding: 0 6%;
     min-height: 240px;
   }
+  /* glowing stage discs under each fighter */
+  .arena::before, .arena::after {
+    content: "";
+    position: absolute;
+    bottom: 16%;
+    width: 230px;
+    height: 50px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(255,210,63,.22), rgba(255,210,63,0) 70%);
+    filter: blur(3px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .arena::before { left: 2%; }
+  .arena::after { right: 2%; background: radial-gradient(ellipse at center, rgba(255,94,126,.22), rgba(255,94,126,0) 70%); }
+  .sprite { z-index: 1; }
+  #battle.with-blocks .arena::before, #battle.with-blocks .arena::after { display: none; }
 
   .sprite {
     font-size: clamp(80px, 16vw, 150px);
@@ -250,9 +351,12 @@
   .problem-panel {
     width: 100%;
     background: var(--panel);
-    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 22px;
     padding: 18px 20px 22px;
-    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    box-shadow: 0 -2px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.4);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -287,6 +391,15 @@
     background: #fff;
     box-shadow: 0 0 4px rgba(0,0,0,.9);
   }
+  /* little banner flag marking the end of the double-hit zone */
+  .fast-marker::before {
+    content: "";
+    position: absolute;
+    top: -6px; left: -3px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #fff;
+  }
   .super-label {
     flex: 0 0 auto;
     width: 96px;
@@ -300,7 +413,19 @@
   @keyframes superPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
   .sprite.super { filter: drop-shadow(0 0 16px var(--accent)) drop-shadow(0 12px 10px rgba(0,0,0,.45)); }
 
-  .question { font-size: clamp(40px, 8vw, 64px); font-weight: bold; margin-bottom: 10px; }
+  .question {
+    font-family: var(--display);
+    font-size: clamp(40px, 8vw, 64px);
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    align-self: center;
+    padding: 4px 22px;
+    border-radius: 16px;
+    background: rgba(0,0,0,.22);
+    border: 1px solid rgba(255,255,255,.08);
+    text-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
 
   /* ---------- Number blocks (addition only) ---------- */
   .blocks-area {
@@ -360,27 +485,30 @@
   .push-btn:disabled { filter: grayscale(0.6) brightness(0.9); cursor: default; box-shadow: 0 5px 0 #777; }
 
   /* give blocks room: shrink the fight scene in addition mode so nothing collides */
-  #battle.with-blocks { overflow-y: auto; }
+  #battle.with-blocks { overflow-y: auto; scrollbar-width: none; }
+  #battle.with-blocks::-webkit-scrollbar { display: none; }
   #battle.with-blocks .topbar { margin-bottom: 4px; }
   #battle.with-blocks .arena { flex: 0 0 auto; min-height: 0; height: 80px; }
   #battle.with-blocks .sprite { font-size: clamp(44px, 8vw, 76px); }
-  #battle.with-blocks .question { font-size: clamp(28px, 5vw, 40px); margin-bottom: 4px; }
+  #battle.with-blocks .question { font-size: clamp(28px, 5vw, 40px); margin-bottom: 4px; padding: 2px 16px; }
   #battle.with-blocks .problem-panel { padding: 14px 18px 16px; gap: 7px; }
   #battle.with-blocks .hint { display: none; }
 
   .answer-row { display: flex; gap: 12px; justify-content: center; align-items: center; }
   #answer {
-    font-family: inherit;
+    font-family: var(--display);
     font-size: 40px;
     font-weight: bold;
     width: 160px;
     text-align: center;
     padding: 10px;
     border-radius: 14px;
-    border: 3px solid transparent;
-    background: rgba(0,0,0,.25);
+    border: 3px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.28);
     color: #fff;
     outline: none;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.4);
+    transition: border-color .15s, background .15s;
   }
   #answer:focus { border-color: var(--accent); }
   #answer.correct { border-color: var(--good); background: rgba(74,222,128,.2); }
@@ -406,30 +534,54 @@
     touch-action: manipulation;
   }
   .key {
-    font-family: inherit;
+    font-family: var(--display);
     font-size: 30px;
     font-weight: bold;
     padding: 16px 0;
     border-radius: 14px;
-    border: none;
+    border: 1px solid rgba(255,255,255,.10);
     color: #fff;
-    background: rgba(255,255,255,.12);
-    box-shadow: 0 4px 0 rgba(0,0,0,.35);
+    background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+    box-shadow: 0 4px 0 rgba(0,0,0,.4), 0 6px 12px rgba(0,0,0,.25);
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
+    transition: transform .06s, box-shadow .06s, filter .12s;
   }
-  .key:hover { filter: brightness(1.15); }
-  .key:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+  .key:hover { filter: brightness(1.18); }
+  .key:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
 
   /* addition mode has the blocks above, so trim the pad only slightly */
   #battle.with-blocks .keypad { gap: 9px; margin-top: 6px; }
   #battle.with-blocks .key { font-size: 28px; padding: 12px 0; }
 
-  .end-emoji { font-size: 120px; margin-bottom: 10px; animation: pop .5s ease; }
+  .end-emoji {
+    font-size: 120px;
+    margin-bottom: 10px;
+    animation: pop .5s ease;
+    filter: drop-shadow(0 0 24px rgba(255,210,63,.5)) drop-shadow(0 10px 12px rgba(0,0,0,.45));
+  }
   @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-  .hint { font-size: 16px; opacity: .6; margin-top: 14px; }
+  .hint { font-size: 16px; color: rgba(255,255,255,.62); margin-top: 14px; }
+
+  /* ---------- Quality floor ---------- */
+  button:focus-visible,
+  .key:focus-visible,
+  .sound-toggle:focus-visible,
+  .tower:focus-visible,
+  #answer:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -480,11 +632,11 @@
     <div class="topbar">
       <div class="fighter-info player">
         <div class="name">🦸 You</div>
-        <div class="hpbar"><div class="fill" id="playerHp"></div></div>
+        <div class="pips player" id="playerHp"></div>
       </div>
       <div class="fighter-info foe">
         <div class="name" id="foeName">👾 Monster</div>
-        <div class="hpbar"><div class="fill" id="foeHp"></div></div>
+        <div class="pips foe" id="foeHp"></div>
       </div>
     </div>
 
@@ -746,7 +898,7 @@
       text = `${state.a} + ${state.b}`;
       state.answer = state.a + state.b;
     } else {
-      state.a = rand(2, 9); state.b = rand(2, 9);
+      state.a = rand(2, 12); state.b = rand(2, 12);
       text = `${state.a} × ${state.b}`;
       state.answer = state.a * state.b;
     }
@@ -801,15 +953,21 @@
     el.superLabel.classList.remove("show");
   }
 
-  // ---------- HP bars ----------
+  // ---------- HP pips ----------
+  // HP is a small integer, so we draw it as countable pips (hearts for the
+  // hero, orbs for the foe) instead of a continuous bar — easy to count along.
+  function renderPips(container, cur, max, kind) {
+    container.innerHTML = "";
+    for (let i = 0; i < max; i++) {
+      const p = document.createElement("span");
+      p.className = "pip " + kind + (i < cur ? "" : " empty");
+      container.appendChild(p);
+    }
+  }
   function renderHp() {
-    const pPct = (state.playerHp / PLAYER_MAX_HP) * 100;
     const foe = FOES[state.foeIndex];
-    const fPct = (state.foeHp / foe.maxHp) * 100;
-    el.playerHp.style.width = pPct + "%";
-    el.foeHp.style.width = fPct + "%";
-    el.playerHp.classList.toggle("low", pPct <= 34);
-    el.foeHp.classList.toggle("low", fPct <= 34);
+    renderPips(el.playerHp, state.playerHp, PLAYER_MAX_HP, "heart");
+    renderPips(el.foeHp, state.foeHp, foe.maxHp, "orb");
   }
 
   // ---------- Number blocks ----------
