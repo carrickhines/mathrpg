@@ -6,3 +6,4 @@
 .verify/geckodriver
 .verify/*.tar.gz
 .verify/shots/
+__pycache__/
