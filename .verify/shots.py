@@ -105,6 +105,18 @@ try:
     time.sleep(1.6)  # block count-up animation
     shot("battle-add-merged")
 
+    # 5. Subtraction battle: one tower with the top blocks marked to remove,
+    #    then take them away and count the remainder.
+    load()
+    click('[data-track="sub"]')
+    click('[data-mode="easy"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-sub")
+    click('#pushBtn')
+    time.sleep(2.0)  # take-away + count-up animation
+    shot("battle-sub-taken")
+
     # 4. Victory / Game-over screens. These need many turns to reach naturally,
     #    so just reveal the static end screen to verify its layout.
     d.execute_script("""
