@@ -7,15 +7,23 @@ fail or run out of time and the foe gets a free swing.
 
 ## Who it's for
 
-Two players, two skill tracks:
+Two players, three skill tracks:
 
 - **Younger son (age 5)** — **Addition track.** Very simple single-digit
   addition (e.g. `3 + 4`). Sums should stay small and approachable.
 - **Older son (age 8)** — **Multiplication track.** Times-table memorization
   (e.g. `7 × 8`), focused on recall of the standard multiplication tables.
+  Both factors range from **2 to 12** (so the 10, 11, and 12 tables are
+  included; ×0 and ×1 are skipped).
+- **Older son (age 8)** — **Division track.** Clean division with no
+  remainder (e.g. `56 ÷ 7`), the inverse of the multiplication tables: the
+  dividend is built from two **2 to 12** factors, so it always divides
+  evenly and the quotient lands in the same 2–12 range. Reinforces the same
+  facts as the times tables, recalled backwards.
 
 The math track is chosen at the start of a game, so each kid plays the version
-suited to them.
+suited to them. Division shares the multiplication track's layout (no number
+blocks); the blocks aid is addition-only.
 
 ## Core gameplay loop
 
@@ -56,7 +64,7 @@ physical math blocks he has at home:
 
 This is a learning aid, not an autosolve: combining helps the child count, but
 the player still works out and enters the answer to attack. The blocks area only
-appears on the addition track (it's hidden for multiplication).
+appears on the addition track (it's hidden for multiplication and division).
 
 ## Difficulty modes
 
@@ -66,8 +74,8 @@ Three modes, distinguished primarily by **time pressure** on each problem:
 - **Normal** — moderate countdown per problem.
 - **Expert** — shorter countdown; rewards quicker recall.
 
-The math *content* stays tied to the chosen track (addition vs multiplication);
-the modes change how much time the player gets, not the kind of math. (If we
+The math *content* stays tied to the chosen track (addition, multiplication, or
+division); the modes change how much time the player gets, not the kind of math. (If we
 later want harder modes to also widen the number range, document that here when
 we add it.)
 
@@ -79,7 +87,7 @@ the bar is a gold **fast zone**, ending at a white marker line:
 - Answer correctly **while still in the fast zone** → a **DOUBLE hit** (double
   damage) with a bigger, flashier attack animation and a "DOUBLE!" callout.
 - Answer correctly after the fast zone → a normal single hit.
-- This applies to **both tracks** (addition and multiplication) the same way.
+- This applies to **all tracks** (addition, multiplication, division) the same way.
 
 Per-mode timing lives in the `MODES` config in `index.html` (`total` = full bar
 duration, `fast` = the double-hit window, `penalty` = whether timing out lets the
@@ -121,7 +129,7 @@ tap, push-together, and the per-block count-up beeps.
   and simple visuals. Must be usable by a 5-year-old.
 - **Immediate, encouraging feedback.** Celebrate correct answers; make wrong
   answers gentle, not punishing.
-- **Fast to start.** Minimal menus: pick track (addition/multiplication), pick
+- **Fast to start.** Minimal menus: pick track (addition/multiplication/division), pick
   mode (easy/normal/expert), play.
 - **Readable code.** This is a hackable family project — favor clarity over
   cleverness so it's easy to adjust problem ranges, timers, and visuals.

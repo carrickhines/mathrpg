@@ -616,6 +616,10 @@
         <span class="emoji">✖️</span>Multiplication
         <span class="sub">Times tables</span>
       </button>
+      <button class="choice" data-track="div">
+        <span class="emoji">➗</span>Division
+        <span class="sub">Times tables in reverse</span>
+      </button>
     </div>
 
     <div class="group-label">Choose your difficulty</div>
@@ -912,6 +916,13 @@
       state.a = rand(1, 9); state.b = rand(1, 9);
       text = `${state.a} + ${state.b}`;
       state.answer = state.a + state.b;
+    } else if (state.track === "div") {
+      // clean division, the inverse of the times tables: build the dividend
+      // from two 2-12 factors so it always divides evenly (no remainder).
+      const divisor = rand(2, 12), quotient = rand(2, 12);
+      state.a = divisor * quotient; state.b = divisor;
+      text = `${state.a} ÷ ${state.b}`;
+      state.answer = quotient;
     } else {
       state.a = rand(2, 12); state.b = rand(2, 12);
       text = `${state.a} × ${state.b}`;
