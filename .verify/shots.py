@@ -86,7 +86,15 @@ try:
     time.sleep(0.3)
     shot("battle-dragon")
 
-    # 3. Addition battle (number blocks visible), then push the towers together
+    # 3. Division battle (no blocks, same layout as multiplication)
+    load()
+    click('[data-track="div"]')
+    click('[data-mode="normal"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-div")
+
+    # 4. Addition battle (number blocks visible), then push the towers together
     load()
     click('[data-track="add"]')
     click('[data-mode="easy"]')
