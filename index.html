@@ -127,7 +127,7 @@
     font-size: 16px;
     letter-spacing: 3px;
     text-transform: uppercase;
-    margin: 18px 0 12px;
+    margin: 14px 0 10px;
     color: var(--accent);
     opacity: .92;
   }
@@ -171,10 +171,13 @@
     box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 9px 18px rgba(0,0,0,.28);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
-    min-width: 200px;
+    /* compact so all four tracks sit on one row and the menu fits 720px */
+    font-size: 18px;
+    padding: 13px 14px;
+    min-width: 156px;
   }
-  button.choice .emoji { font-size: 40px; display: block; margin-bottom: 6px; }
-  button.choice .sub { font-family: var(--body); font-size: 14px; opacity: .7; font-weight: normal; display: block; margin-top: 4px; }
+  button.choice .emoji { font-size: 30px; display: block; margin-bottom: 4px; }
+  button.choice .sub { font-family: var(--body); font-size: 12px; opacity: .7; font-weight: normal; display: block; margin-top: 3px; }
   button.choice.selected {
     background: linear-gradient(180deg, #ffe27a, var(--accent));
     color: var(--ink);
@@ -491,6 +494,15 @@
   .block.count, .block.pulse { animation: blockPop 0.3s ease; }
   @keyframes blockPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
+  /* subtraction: blocks marked to be taken away, then their removal */
+  .block.remove-mark { opacity: .35; border-style: dashed; border-color: rgba(255,255,255,.75); }
+  .block.removing { animation: blockRemove 0.45s ease forwards; }
+  @keyframes blockRemove {
+    0% { transform: scale(1); opacity: .6; }
+    35% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(0) translateY(-26px); opacity: 0; }
+  }
+
   .blocks-plus { font-size: 34px; font-weight: bold; color: var(--accent); align-self: center; }
   .push-btn { align-self: center; font-size: 18px; padding: 10px 16px; }
   .push-btn:disabled { filter: grayscale(0.6) brightness(0.9); cursor: default; box-shadow: 0 5px 0 #777; }
@@ -612,6 +624,10 @@
         <span class="emoji">➕</span>Addition
         <span class="sub">Ages 5+</span>
       </button>
+      <button class="choice" data-track="sub">
+        <span class="emoji">➖</span>Subtraction
+        <span class="sub">Take blocks away</span>
+      </button>
       <button class="choice" data-track="mul">
         <span class="emoji">✖️</span>Multiplication
         <span class="sub">Times tables</span>
@@ -638,7 +654,7 @@
       </button>
     </div>
 
-    <div style="margin-top:34px">
+    <div style="margin-top:22px">
       <button id="startBtn">Start Battle!</button>
     </div>
   </section>
@@ -859,6 +875,7 @@
     a: 0,
     b: 0,
     merged: false,
+    taken: false,
     timerId: null,
     timerStart: 0,
     busy: false,
@@ -916,6 +933,12 @@
       state.a = rand(1, 9); state.b = rand(1, 9);
       text = `${state.a} + ${state.b}`;
       state.answer = state.a + state.b;
+    } else if (state.track === "sub") {
+      // single-digit take-away for the 5-year-old; keep the result >= 1 so
+      // there's always something left to count after taking blocks away.
+      state.a = rand(2, 9); state.b = rand(1, state.a - 1);
+      text = `${state.a} − ${state.b}`;
+      state.answer = state.a - state.b;
     } else if (state.track === "div") {
       // clean division, the inverse of the times tables: build the dividend
       // from two 2-12 factors so it always divides evenly (no remainder).
@@ -1013,21 +1036,38 @@
   }
 
   function renderBlocks() {
-    if (state.track !== "add") {
-      el.blocksArea.classList.add("hidden");
-      return;
-    }
-    el.blocksArea.classList.remove("hidden");
     state.merged = false;
-    el.pushBtn.disabled = false;
-    el.pushBtn.textContent = "👐 Push together";
-    el.plusSign.style.visibility = "visible";
-    el.towerA.className = "tower";
-    el.towerB.className = "tower";
-    el.towerA.style.cssText = "";
-    el.towerB.style.cssText = "";
-    fillTower(el.towerA, state.a, blockColor(state.a));
-    fillTower(el.towerB, state.b, blockColor(state.b));
+    state.taken = false;
+    if (state.track === "add") {
+      el.blocksArea.classList.remove("hidden");
+      el.pushBtn.disabled = false;
+      el.pushBtn.textContent = "👐 Push together";
+      el.plusSign.style.display = "";
+      el.plusSign.style.visibility = "visible";
+      el.towerB.style.display = "";
+      el.towerA.className = "tower";
+      el.towerB.className = "tower";
+      el.towerA.style.cssText = "";
+      el.towerB.style.cssText = "";
+      fillTower(el.towerA, state.a, blockColor(state.a));
+      fillTower(el.towerB, state.b, blockColor(state.b));
+    } else if (state.track === "sub") {
+      // One tower = the minuend. The top `b` blocks are marked as the ones to
+      // take away; pressing the button removes them and counts what's left.
+      // The answer is never printed — the child counts the remaining blocks.
+      el.blocksArea.classList.remove("hidden");
+      el.pushBtn.disabled = false;
+      el.pushBtn.textContent = `✋ Take ${state.b} away`;
+      el.plusSign.style.display = "none";
+      el.towerB.style.display = "none";
+      el.towerA.className = "tower";
+      el.towerA.style.cssText = "";
+      fillTower(el.towerA, state.a, blockColor(state.a));
+      const blocks = [...el.towerA.children];
+      for (let i = state.a - state.b; i < state.a; i++) blocks[i].classList.add("remove-mark");
+    } else {
+      el.blocksArea.classList.add("hidden");
+    }
   }
 
   function mergeTowers() {
@@ -1068,6 +1108,47 @@
     setTimeout(step, 250);
   }
 
+  // Subtraction's take-away: remove the marked top `b` blocks one at a time,
+  // then light up the remainder so the child can count what's left. As with
+  // addition, the total is never shown.
+  function takeAway() {
+    if (state.taken || state.track !== "sub") return;
+    state.taken = true;
+    Sound.push();
+    el.pushBtn.disabled = true;
+    el.pushBtn.textContent = "✓ Taken away!";
+
+    const toRemove = [...el.towerA.children].slice(state.a - state.b);
+    toRemove.forEach((blk, i) => {
+      setTimeout(() => {
+        blk.classList.remove("remove-mark");
+        blk.classList.add("removing");
+        Sound.count(state.b - i);
+      }, i * 160);
+    });
+
+    setTimeout(() => {
+      if (!state.taken) return;
+      toRemove.forEach((b) => b.remove());
+      const left = state.a - state.b;
+      el.towerA.style.gridTemplateRows = `repeat(${Math.min(left, 3) || 1}, 38px)`;
+      el.towerA.classList.remove("merged-pop");
+      void el.towerA.offsetWidth;
+      el.towerA.classList.add("merged-pop");
+
+      const rest = [...el.towerA.children];
+      let i = 0;
+      const step = () => {
+        if (i >= rest.length || !state.taken) return;
+        rest[i].classList.add("count");
+        Sound.count(i);
+        i++;
+        setTimeout(step, 170);
+      };
+      setTimeout(step, 250);
+    }, state.b * 160 + 250);
+  }
+
   function rectsOverlap(elA, elB) {
     const a = elA.getBoundingClientRect();
     const b = elB.getBoundingClientRect();
@@ -1078,7 +1159,7 @@
   let dragTower = null, dragStartX = 0, dragStartY = 0, dragMoved = 0;
   function attachDrag(tower) {
     tower.addEventListener("pointerdown", (e) => {
-      if (state.merged) return;
+      if (state.merged || state.taken) return;
       dragTower = tower;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
@@ -1108,7 +1189,7 @@
         tower.style.transform = "";
         return;
       }
-      if (rectsOverlap(el.towerA, el.towerB)) mergeTowers();
+      if (state.track === "add" && rectsOverlap(el.towerA, el.towerB)) mergeTowers();
       else tower.style.transform = ""; // snap back
     });
   }
@@ -1278,7 +1359,7 @@
     el.foeSprite.style.opacity = "1";
     setupFoe();
     renderHp();
-    el.battle.classList.toggle("with-blocks", state.track === "add");
+    el.battle.classList.toggle("with-blocks", state.track === "add" || state.track === "sub");
     show(el.battle);
     newProblem();
   }
@@ -1333,7 +1414,9 @@
     else if (/^\d$/.test(e.key)) { e.preventDefault(); pressKey(e.key); }
   });
   el.muteBtn.addEventListener("click", () => { Sound.toggle(); renderMute(); });
-  el.pushBtn.addEventListener("click", mergeTowers);
+  el.pushBtn.addEventListener("click", () => {
+    if (state.track === "sub") takeAway(); else mergeTowers();
+  });
   attachDrag(el.towerA);
   attachDrag(el.towerB);
 

@@ -7,10 +7,14 @@ fail or run out of time and the foe gets a free swing.
 
 ## Who it's for
 
-Two players, three skill tracks:
+Two players, four skill tracks:
 
 - **Younger son (age 5)** — **Addition track.** Very simple single-digit
   addition (e.g. `3 + 4`). Sums should stay small and approachable.
+- **Younger son (age 5)** — **Subtraction track.** Single-digit take-away
+  (e.g. `7 − 5`), the inverse of addition. The minuend is 2–9 and the result
+  is kept **≥ 1**, so there's always something left to count. Uses the same
+  number-blocks aid as addition, in "take away" form (see below).
 - **Older son (age 8)** — **Multiplication track.** Times-table memorization
   (e.g. `7 × 8`), focused on recall of the standard multiplication tables.
   Both factors range from **2 to 12** (so the 10, 11, and 12 tables are
@@ -22,8 +26,8 @@ Two players, three skill tracks:
   facts as the times tables, recalled backwards.
 
 The math track is chosen at the start of a game, so each kid plays the version
-suited to them. Division shares the multiplication track's layout (no number
-blocks); the blocks aid is addition-only.
+suited to them. Multiplication and division use the plain layout (no number
+blocks); the number-blocks aid appears on the addition and subtraction tracks.
 
 ## Core gameplay loop
 
@@ -39,11 +43,11 @@ blocks); the blocks aid is addition-only.
 Keep the RPG framing light and fun (simple foes, hits, HP bars) — the point is
 to make drilling math feel like a game, not a worksheet.
 
-## Number blocks (addition track)
+## Number blocks (addition & subtraction tracks)
 
-To help the younger son, the addition track shows each operand as a stack of
-counted, colored blocks — **Numberblocks**-style, and meant to mirror the
-physical math blocks he has at home:
+To help the younger son, the addition and subtraction tracks show the operands
+as stacks of counted, colored blocks — **Numberblocks**-style, and meant to
+mirror the physical math blocks he has at home:
 
 - Each operand renders as its own tower of plain colored blocks (no numbers
   printed on them — the child counts the physical blocks themselves).
@@ -62,9 +66,17 @@ physical math blocks he has at home:
   not reveal the answer. The child counts the combined tower and types the sum.
 - Tapping an individual block makes it "pop" so it's easy to count along.
 
-This is a learning aid, not an autosolve: combining helps the child count, but
-the player still works out and enters the answer to attack. The blocks area only
-appears on the addition track (it's hidden for multiplication and division).
+**Subtraction is the take-away form of the same aid.** It shows a single tower
+of the minuend's blocks; the top `b` blocks are marked (dashed/faded) as the
+ones to remove. Pressing **"Take N away"** animates those blocks off one at a
+time, then lights up the remaining blocks to pace counting. As with addition,
+the difference is **never printed** — the child counts what's left and types it.
+(Drag-to-merge is addition-only; subtraction uses the button plus tap-to-count.)
+
+This is a learning aid, not an autosolve: combining/removing helps the child
+count, but the player still works out and enters the answer to attack. The
+blocks area only appears on the addition and subtraction tracks (it's hidden for
+multiplication and division).
 
 ## Difficulty modes
 
@@ -74,8 +86,8 @@ Three modes, distinguished primarily by **time pressure** on each problem:
 - **Normal** — moderate countdown per problem.
 - **Expert** — shorter countdown; rewards quicker recall.
 
-The math *content* stays tied to the chosen track (addition, multiplication, or
-division); the modes change how much time the player gets, not the kind of math. (If we
+The math *content* stays tied to the chosen track (addition, subtraction,
+multiplication, or division); the modes change how much time the player gets, not the kind of math. (If we
 later want harder modes to also widen the number range, document that here when
 we add it.)
 
@@ -87,7 +99,7 @@ the bar is a gold **fast zone**, ending at a white marker line:
 - Answer correctly **while still in the fast zone** → a **DOUBLE hit** (double
   damage) with a bigger, flashier attack animation and a "DOUBLE!" callout.
 - Answer correctly after the fast zone → a normal single hit.
-- This applies to **all tracks** (addition, multiplication, division) the same way.
+- This applies to **all tracks** (addition, subtraction, multiplication, division) the same way.
 
 Per-mode timing lives in the `MODES` config in `index.html` (`total` = full bar
 duration, `fast` = the double-hit window, `penalty` = whether timing out lets the
@@ -129,7 +141,7 @@ tap, push-together, and the per-block count-up beeps.
   and simple visuals. Must be usable by a 5-year-old.
 - **Immediate, encouraging feedback.** Celebrate correct answers; make wrong
   answers gentle, not punishing.
-- **Fast to start.** Minimal menus: pick track (addition/multiplication/division), pick
+- **Fast to start.** Minimal menus: pick track (addition/subtraction/multiplication/division), pick
   mode (easy/normal/expert), play.
 - **Readable code.** This is a hackable family project — favor clarity over
   cleverness so it's easy to adjust problem ranges, timers, and visuals.
