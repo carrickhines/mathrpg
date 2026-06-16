@@ -30,10 +30,22 @@ opts.add_argument(f"--width={W}")
 opts.add_argument(f"--height={H}")
 service = Service(executable_path=os.path.join(HERE, "geckodriver"), log_output=os.devnull)
 d = webdriver.Firefox(options=opts, service=service)
-# set_window_size sets the OUTER size; correct it so the inner viewport is W x H
+
+
+def fit_viewport(w, h):
+    """set_window_size sets the OUTER size; iterate until the INNER viewport
+    matches, accounting for whatever chrome the headless window carries."""
+    d.set_window_size(w, h)
+    for _ in range(5):
+        sz = d.get_window_size()
+        iw, ih = d.execute_script("return [window.innerWidth, window.innerHeight]")
+        if abs(iw - w) <= 1 and abs(ih - h) <= 1:
+            break
+        d.set_window_size(sz["width"] + (w - iw), sz["height"] + (h - ih))
+
+
 d.get(PAGE)
-iw, ih = d.execute_script("return [window.innerWidth, window.innerHeight]")
-d.set_window_size(W + (W - iw), H + (H - ih))
+fit_viewport(W, H)
 
 
 def shot(name):
@@ -62,6 +74,17 @@ try:
     click('#startBtn')
     time.sleep(1.0)  # battle fade + first problem
     shot("battle-mul")
+
+    # the dragon is the largest foe — check the boss against the layout
+    d.execute_script("""
+        var s=document.getElementById('foeSprite');
+        s.textContent='🐉'; s.style.setProperty('--foe-scale', 1.16);
+        document.getElementById('foeName').textContent='🐉 Dragon';
+        var p=document.getElementById('foeHp'); p.innerHTML='';
+        for(var i=0;i<5;i++){var o=document.createElement('span');o.className='pip orb';p.appendChild(o);}
+    """)
+    time.sleep(0.3)
+    shot("battle-dragon")
 
     # 3. Addition battle (number blocks visible), then push the towers together
     load()
