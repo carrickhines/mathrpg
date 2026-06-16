@@ -115,7 +115,8 @@
     font-size: 19px;
     color: rgba(255,255,255,.78);
     margin-bottom: 30px;
-    max-width: 30ch;
+    max-width: 50ch;       /* wide enough to keep these on one line on tablet/desktop */
+    text-wrap: balance;    /* if it must wrap on a narrow phone, keep the lines even */
   }
   .group-label {
     font-family: var(--display);
