@@ -188,7 +188,7 @@
     align-items: center;
     gap: 16px;
     margin-bottom: 8px;
-    padding-right: 52px;   /* clear the top-right mute button */
+    padding-right: 66px;   /* clear the top-right mute button (~58px wide) */
   }
 
   .fighter-info { flex: 1; max-width: 320px; }
@@ -264,7 +264,13 @@
     position: relative;
   }
   .sprite.player { animation: idlePlayer 2.4s ease-in-out infinite; }
-  .sprite.foe { animation: idleFoe 2.8s ease-in-out infinite; transform: scaleX(-1); }
+  .sprite.foe {
+    animation: idleFoe 2.8s ease-in-out infinite;
+    transform: scaleX(-1);
+    /* per-foe scale evens out emoji glyphs that fill their em-box differently
+       (a solid circle vs a sprawling dragon), set via --foe-scale in JS */
+    font-size: calc(clamp(80px, 16vw, 150px) * var(--foe-scale, 1));
+  }
 
   @keyframes idlePlayer { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
   @keyframes idleFoe { 0%,100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-12px); } }
@@ -490,6 +496,7 @@
   #battle.with-blocks .topbar { margin-bottom: 4px; }
   #battle.with-blocks .arena { flex: 0 0 auto; min-height: 0; height: 80px; }
   #battle.with-blocks .sprite { font-size: clamp(44px, 8vw, 76px); }
+  #battle.with-blocks .sprite.foe { font-size: calc(clamp(44px, 8vw, 76px) * var(--foe-scale, 1)); }
   #battle.with-blocks .question { font-size: clamp(28px, 5vw, 40px); margin-bottom: 4px; padding: 2px 16px; }
   #battle.with-blocks .problem-panel { padding: 14px 18px 16px; gap: 7px; }
   #battle.with-blocks .hint { display: none; }
@@ -809,11 +816,14 @@
     expert: { total: 9000,  fast: 3500, penalty: true,  label: "Expert" },
   };
 
+  // scale evens out how much of the em-box each emoji actually fills, so a
+  // solid circle and a sprawling dragon read as similar-sized foes (with the
+  // boss nudged a touch larger). Tuned by screenshot.
   const FOES = [
-    { name: "Slime",   emoji: "🟢", maxHp: 3 },
-    { name: "Bat",     emoji: "🦇", maxHp: 4 },
-    { name: "Ghost",   emoji: "👻", maxHp: 4 },
-    { name: "Dragon",  emoji: "🐉", maxHp: 5 },
+    { name: "Slime",   emoji: "🟢", maxHp: 3, scale: 0.80 },
+    { name: "Bat",     emoji: "🦇", maxHp: 4, scale: 1.05 },
+    { name: "Ghost",   emoji: "👻", maxHp: 4, scale: 0.92 },
+    { name: "Dragon",  emoji: "🐉", maxHp: 5, scale: 1.16 },
   ];
 
   const PLAYER_MAX_HP = 5;
@@ -1231,6 +1241,7 @@
     const foe = FOES[state.foeIndex];
     state.foeHp = foe.maxHp;
     el.foeSprite.textContent = foe.emoji;
+    el.foeSprite.style.setProperty("--foe-scale", foe.scale || 1);
     el.foeName.textContent = foe.emoji + " " + foe.name;
     renderHp();
   }
