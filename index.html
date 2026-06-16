@@ -238,7 +238,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 6%;
-    min-height: 240px;
+    min-height: 170px;
   }
   /* glowing stage discs under each fighter */
   .arena::before, .arena::after {
@@ -259,7 +259,7 @@
   #battle.with-blocks .arena::before, #battle.with-blocks .arena::after { display: none; }
 
   .sprite {
-    font-size: clamp(80px, 16vw, 150px);
+    font-size: clamp(64px, 13vw, 124px);
     filter: drop-shadow(0 12px 10px rgba(0,0,0,.45));
     transition: transform .15s;
     position: relative;
@@ -270,7 +270,7 @@
     transform: scaleX(-1);
     /* per-foe scale evens out emoji glyphs that fill their em-box differently
        (a solid circle vs a sprawling dragon), set via --foe-scale in JS */
-    font-size: calc(clamp(80px, 16vw, 150px) * var(--foe-scale, 1));
+    font-size: calc(clamp(64px, 13vw, 124px) * var(--foe-scale, 1));
   }
 
   @keyframes idlePlayer { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -360,14 +360,14 @@
     background: var(--panel);
     border: 1px solid rgba(255,255,255,.10);
     border-radius: 22px;
-    padding: 18px 20px 22px;
+    padding: 14px 20px 16px;
     box-shadow: 0 -2px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.4);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;            /* never let the panel get squeezed into itself */
   }
 
@@ -422,10 +422,10 @@
 
   .question {
     font-family: var(--display);
-    font-size: clamp(40px, 8vw, 64px);
+    font-size: clamp(38px, 7vw, 56px);
     font-weight: bold;
     letter-spacing: 2px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     align-self: center;
     padding: 4px 22px;
     border-radius: 16px;
@@ -538,14 +538,14 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 8px;
     touch-action: manipulation;
   }
   .key {
     font-family: var(--display);
     font-size: 30px;
     font-weight: bold;
-    padding: 16px 0;
+    padding: 13px 0;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,.10);
     color: #fff;
@@ -571,7 +571,7 @@
   }
   @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-  .hint { font-size: 16px; color: rgba(255,255,255,.62); margin-top: 14px; }
+  .hint { font-size: 16px; color: rgba(255,255,255,.62); margin-top: 8px; }
 
   /* ---------- Quality floor ---------- */
   button:focus-visible,
