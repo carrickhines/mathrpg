@@ -7,8 +7,16 @@ fail or run out of time and the foe gets a free swing.
 
 ## Who it's for
 
-Two players, four skill tracks:
+Two players, seven skill tracks:
 
+- **Younger son (age 5)** — **Next Number track.** Counting practice: show a
+  number from **1 to 30** and ask for the one that comes next (e.g. `17 → ?`,
+  answer `18`). The plainest track — no number blocks — meant for a child still
+  building number-order fluency before addition clicks.
+- **Younger son (age 5)** — **Count On track.** A gentle stepping stone from
+  counting to addition: add only **1, 2, or 3** to a starting number 2–9
+  (e.g. `8 + 2`). Uses the same push-together number-blocks aid as the addition
+  track, so "counting on" is exactly what the blocks show.
 - **Younger son (age 5)** — **Addition track.** Very simple single-digit
   addition (e.g. `3 + 4`). Sums should stay small and approachable.
 - **Younger son (age 5)** — **Subtraction track.** Single-digit take-away
@@ -24,10 +32,18 @@ Two players, four skill tracks:
   dividend is built from two **2 to 12** factors, so it always divides
   evenly and the quotient lands in the same 2–12 range. Reinforces the same
   facts as the times tables, recalled backwards.
+- **Older son (turning 9, 3rd grade)** — **Algebra track.** Solve for the
+  unknown `x`. Most problems are **one-step across all four operations**
+  (`x + 5 = 12`, `x − 4 = 3`, `3 × x = 15`, `x ÷ 2 = 8`); roughly **30%** are
+  **two-step** (`2 × x + 1 = 7`, `4 × x − 3 = 9`). Every form resolves to a
+  single positive whole-number answer (the value of `x`) so it fits the number
+  pad. Challenging but achievable, and the ×/÷ forms reinforce his times tables.
+  Generation lives in `makeAlgebra()` in `index.html`.
 
 The math track is chosen at the start of a game, so each kid plays the version
-suited to them. Multiplication and division use the plain layout (no number
-blocks); the number-blocks aid appears on the addition and subtraction tracks.
+suited to them. The number-blocks aid appears on the addition, subtraction, and
+count-on tracks; next-number, multiplication, division, and algebra use the
+plain layout (no number blocks).
 
 ## Core gameplay loop
 
@@ -43,11 +59,12 @@ blocks); the number-blocks aid appears on the addition and subtraction tracks.
 Keep the RPG framing light and fun (simple foes, hits, HP bars) — the point is
 to make drilling math feel like a game, not a worksheet.
 
-## Number blocks (addition & subtraction tracks)
+## Number blocks (addition, count-on & subtraction tracks)
 
-To help the younger son, the addition and subtraction tracks show the operands
-as stacks of counted, colored blocks — **Numberblocks**-style, and meant to
-mirror the physical math blocks he has at home:
+To help the younger son, the addition, count-on, and subtraction tracks show the
+operands as stacks of counted, colored blocks — **Numberblocks**-style, and meant
+to mirror the physical math blocks he has at home (count-on reuses the addition
+push-together aid exactly):
 
 - Each operand renders as its own tower of plain colored blocks (no numbers
   printed on them — the child counts the physical blocks themselves).
@@ -75,8 +92,8 @@ the difference is **never printed** — the child counts what's left and types i
 
 This is a learning aid, not an autosolve: combining/removing helps the child
 count, but the player still works out and enters the answer to attack. The
-blocks area only appears on the addition and subtraction tracks (it's hidden for
-multiplication and division).
+blocks area only appears on the addition, count-on, and subtraction tracks (it's
+hidden for next-number, multiplication, division, and algebra).
 
 ## Difficulty modes
 
@@ -86,8 +103,8 @@ Three modes, distinguished primarily by **time pressure** on each problem:
 - **Normal** — moderate countdown per problem.
 - **Expert** — shorter countdown; rewards quicker recall.
 
-The math *content* stays tied to the chosen track (addition, subtraction,
-multiplication, or division); the modes change how much time the player gets, not the kind of math. (If we
+The math *content* stays tied to the chosen track (any of the seven); the modes
+change how much time the player gets, not the kind of math. (If we
 later want harder modes to also widen the number range, document that here when
 we add it.)
 
@@ -99,7 +116,7 @@ the bar is a gold **fast zone**, ending at a white marker line:
 - Answer correctly **while still in the fast zone** → a **DOUBLE hit** (double
   damage) with a bigger, flashier attack animation and a "DOUBLE!" callout.
 - Answer correctly after the fast zone → a normal single hit.
-- This applies to **all tracks** (addition, subtraction, multiplication, division) the same way.
+- This applies to **all seven tracks** the same way.
 
 Per-mode timing lives in the `MODES` config in `index.html` (`total` = full bar
 duration, `fast` = the double-hit window, `penalty` = whether timing out lets the
@@ -111,6 +128,32 @@ available, but running out of time does **not** let the foe attack
 Normal and Expert keep the timeout penalty (`penalty: true`). Note: a *wrong*
 answer still lets the foe counterattack in every mode.
 
+## Win reward — iPad game time
+
+Beating every foe (the **Victory** screen, not Game Over) grants a fun,
+variable reward: **5–10 minutes of iPad game time** (`rand(5, 10)`, stored as
+`state.earnedMins`). The win screen shows the earned minutes and a **"Start the
+timer"** button that runs an in-app countdown (`startRewardTimer`). When it
+reaches zero (`ringTimer`), the countdown flashes red, shows **"TIME'S UP!"**,
+and a **looping two-tone alarm** plays (`Sound.startAlarm` / `stopAlarm`) until
+the player taps **"Stop alarm"**. The countdown tracks a wall-clock end time so a
+delayed tick can't let the total drift. Navigating away (Play Again / starting a
+new game) always calls `clearRewardTimer`, so the alarm never bleeds into the
+next screen.
+
+**Known iOS limitation — by design, not a bug:** the in-app timer/alarm only
+works while the page is **open and in the foreground with the screen on**. iOS
+Safari (and all iOS browsers) freeze JavaScript timers and Web Audio in
+backgrounded tabs, and a web page **cannot steal focus or come to the
+foreground** — there is no API for it (and no Vibration API on iOS). So the
+moment the kid switches to another game, our countdown pauses and the alarm
+won't fire on time. That's why the reward screen nudges the player to **keep the
+screen open, or ask Siri to set a timer** — the iPad's own Clock/Siri timer is
+the only thing that reliably interrupts another app. Don't try to "fix" this
+with notifications/PWA push: it needs an installed PWA + permission and still
+can't schedule a future alarm without live JS, which breaks the single-file
+`file://` design.
+
 ## Sound
 
 All sound effects are **synthesized at runtime with the Web Audio API** — there
@@ -118,7 +161,8 @@ are no audio files to ship, so the game stays a single self-contained HTML that
 works from `file://`. The `Sound` module near the top of the script in
 `index.html` builds short tones/noise bursts for: attack hit, the SUPER double
 hit, taking damage, wrong/too-slow, foe KO, victory, game over, UI clicks, block
-tap, push-together, and the per-block count-up beeps.
+tap, push-together, the per-block count-up beeps, and the looping "time's up"
+alarm for the iPad-game-time reward.
 
 - A 🔊 **mute toggle** sits in the top-right corner; the preference is saved to
   `localStorage` (`mathrpg_muted`).
@@ -141,8 +185,9 @@ tap, push-together, and the per-block count-up beeps.
   and simple visuals. Must be usable by a 5-year-old.
 - **Immediate, encouraging feedback.** Celebrate correct answers; make wrong
   answers gentle, not punishing.
-- **Fast to start.** Minimal menus: pick track (addition/subtraction/multiplication/division), pick
-  mode (easy/normal/expert), play.
+- **Fast to start.** Minimal menus: pick track (next-number/count-on/addition/
+  subtraction/multiplication/division/algebra), pick mode (easy/normal/expert),
+  play.
 - **Readable code.** This is a hackable family project — favor clarity over
   cleverness so it's easy to adjust problem ranges, timers, and visuals.
 

@@ -117,6 +117,31 @@ try:
     time.sleep(2.0)  # take-away + count-up animation
     shot("battle-sub-taken")
 
+    # 6. Next Number battle (counting, no blocks): a number and "→ ?"
+    load()
+    click('[data-track="next"]')
+    click('[data-mode="easy"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-next")
+
+    # 7. Count On battle (add 1-3, push-together blocks like addition)
+    load()
+    click('[data-track="count"]')
+    click('[data-mode="easy"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-count")
+
+    # 8. Algebra battle (solve for x, no blocks). Capture a few problems so the
+    #    suite shows one-step and two-step forms across runs.
+    load()
+    click('[data-track="alg"]')
+    click('[data-mode="normal"]')
+    click('#startBtn')
+    time.sleep(1.0)
+    shot("battle-alg")
+
     # 4. Victory / Game-over screens. These need many turns to reach naturally,
     #    so just reveal the static end screen to verify its layout.
     d.execute_script("""
@@ -126,8 +151,32 @@ try:
         document.getElementById('endEmoji').textContent='🏆';
         document.getElementById('endTitle').textContent='Victory!';
         document.getElementById('endText').textContent="You defeated every monster. You're a math hero!";
+        // reveal the win reward (earned iPad time + Start timer button)
+        document.getElementById('reward').classList.remove('hidden');
+        document.getElementById('rewardMins').textContent='8';
+        document.getElementById('rewardMinsHint').textContent='8';
     """)
     time.sleep(1.2)  # let the end screen fade in fully
     shot("end-win")
+
+    # the countdown, mid-run and at "time's up" (alarm state)
+    d.execute_script("""
+        document.getElementById('rewardStart').classList.add('hidden');
+        var cb=document.getElementById('countdownBox'); cb.classList.remove('hidden');
+        document.getElementById('countdown').textContent='7:42';
+        document.getElementById('countdownLabel').textContent='iPad time left';
+        document.getElementById('cancelTimerBtn').textContent='Cancel';
+    """)
+    time.sleep(0.4)
+    shot("end-countdown")
+
+    d.execute_script("""
+        var cb=document.getElementById('countdownBox'); cb.classList.add('ringing');
+        document.getElementById('countdown').textContent='0:00';
+        document.getElementById('countdownLabel').textContent="⏰ TIME'S UP!";
+        document.getElementById('cancelTimerBtn').textContent='🔕 Stop alarm';
+    """)
+    time.sleep(0.4)
+    shot("end-ringing")
 finally:
     d.quit()

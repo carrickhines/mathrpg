@@ -171,10 +171,10 @@
     box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 9px 18px rgba(0,0,0,.28);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
-    /* compact so all four tracks sit on one row and the menu fits 720px */
+    /* compact so the seven tracks wrap to a couple of tidy rows within 720px */
     font-size: 18px;
     padding: 13px 14px;
-    min-width: 156px;
+    min-width: 150px;
   }
   button.choice .emoji { font-size: 30px; display: block; margin-bottom: 4px; }
   button.choice .sub { font-family: var(--body); font-size: 12px; opacity: .7; font-weight: normal; display: block; margin-top: 3px; }
@@ -589,6 +589,55 @@
 
   .hint { font-size: 16px; color: rgba(255,255,255,.62); margin-top: 8px; }
 
+  /* ---------- Win reward: iPad-time countdown ---------- */
+  .reward {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin: 8px 0 22px;
+  }
+  .reward.hidden, #countdownBox.hidden, #rewardStart.hidden { display: none; }
+  #rewardStart { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .reward-line { font-size: 22px; font-weight: bold; color: var(--good); }
+  .reward-line b { color: var(--accent); font-size: 28px; }
+  .reward-hint {
+    font-size: 14px;
+    color: rgba(255,255,255,.6);
+    max-width: 42ch;
+    text-wrap: balance;
+  }
+
+  #countdownBox { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .countdown {
+    font-family: var(--display);
+    font-size: clamp(56px, 14vw, 92px);
+    font-weight: bold;
+    color: var(--accent);
+    text-shadow: 0 3px 0 var(--accent-2), 0 8px 18px rgba(0,0,0,.5);
+    line-height: 1;
+    letter-spacing: 2px;
+  }
+  .countdown-label {
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,.72);
+    margin-bottom: 10px;
+  }
+  .ghost-btn {
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    box-shadow: 0 5px 0 rgba(0,0,0,.35);
+    font-size: 18px;
+    padding: 12px 22px;
+  }
+  .ghost-btn:active { box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+
+  /* time's up: flash the countdown red to grab attention within the app */
+  #countdownBox.ringing .countdown { color: var(--bad); animation: ringPulse .6s ease-in-out infinite; }
+  #countdownBox.ringing .countdown-label { color: var(--bad); font-weight: bold; }
+  @keyframes ringPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.14); opacity: .55; } }
+
   /* ---------- Quality floor ---------- */
   button:focus-visible,
   .key:focus-visible,
@@ -620,6 +669,14 @@
 
     <div class="group-label">Choose your power</div>
     <div class="btn-row" id="trackRow">
+      <button class="choice" data-track="next">
+        <span class="emoji">🔢</span>Next Number
+        <span class="sub">What comes after?</span>
+      </button>
+      <button class="choice" data-track="count">
+        <span class="emoji">👣</span>Count On
+        <span class="sub">Add 1, 2 or 3</span>
+      </button>
       <button class="choice" data-track="add">
         <span class="emoji">➕</span>Addition
         <span class="sub">Ages 5+</span>
@@ -635,6 +692,10 @@
       <button class="choice" data-track="div">
         <span class="emoji">➗</span>Division
         <span class="sub">Times tables in reverse</span>
+      </button>
+      <button class="choice" data-track="alg">
+        <span class="emoji">🧩</span>Algebra
+        <span class="sub">Solve for x</span>
       </button>
     </div>
 
@@ -728,6 +789,26 @@
     <div class="end-emoji" id="endEmoji">🏆</div>
     <h1 id="endTitle">Victory!</h1>
     <div class="subtitle" id="endText">You defeated the monster!</div>
+
+    <!-- Win-only reward: earned iPad game time + an in-app countdown timer.
+         (The timer only runs while this screen stays open and in front — iOS
+         freezes background tabs — hence the "ask Siri" nudge.) -->
+    <div id="reward" class="reward hidden">
+      <div class="reward-line">🎮 You earned <b id="rewardMins">7</b> minutes of iPad game time!</div>
+
+      <div id="rewardStart">
+        <button id="startTimerBtn">⏱️ Start the timer</button>
+        <div class="reward-hint">Keep this screen open so the alarm can ring — or
+          ask Siri to set a timer for <span id="rewardMinsHint">7</span> minutes.</div>
+      </div>
+
+      <div id="countdownBox" class="hidden">
+        <div class="countdown" id="countdown">7:00</div>
+        <div class="countdown-label" id="countdownLabel">iPad time left</div>
+        <button id="cancelTimerBtn" class="ghost-btn">Cancel</button>
+      </div>
+    </div>
+
     <button id="playAgainBtn">Play Again</button>
   </section>
 
@@ -741,6 +822,7 @@
   const Sound = (() => {
     let ctx = null;
     let muted = (localStorage.getItem("mathrpg_muted") === "1");
+    let alarmTimer = null;
 
     function ensure() {
       if (!ctx) {
@@ -829,6 +911,23 @@
       blockTap() { tone(600, 0.08, { type: "triangle", vol: 0.14 }); },
       count(i) { tone(440 + i * 45, 0.07, { type: "triangle", vol: 0.16 }); },
       push() { noise(0.3, { vol: 0.12 }); tone(220, 0.3, { type: "sine", vol: 0.12, slideTo: 440 }); },
+
+      // Looping "time's up" alarm: a classic two-tone beep that repeats until
+      // stopAlarm() is called. Respects the mute toggle like every other sound.
+      // (Only rings while the page is in the foreground — iOS suspends audio in
+      // backgrounded tabs.)
+      startAlarm() {
+        this.stopAlarm();
+        const ring = () => {
+          tone(880, 0.18, { type: "square", vol: 0.3 });
+          tone(660, 0.20, { type: "square", vol: 0.3, delay: 0.22 });
+        };
+        ring();
+        alarmTimer = setInterval(ring, 750);
+      },
+      stopAlarm() {
+        if (alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+      },
     };
   })();
 
@@ -879,6 +978,9 @@
     timerId: null,
     timerStart: 0,
     busy: false,
+    earnedMins: 0,
+    countdownId: null,
+    countdownEnd: 0,
   };
 
   // ---------- Element refs ----------
@@ -898,6 +1000,10 @@
     plusSign: $("plusSign"), pushBtn: $("pushBtn"),
     endEmoji: $("endEmoji"), endTitle: $("endTitle"), endText: $("endText"),
     playAgainBtn: $("playAgainBtn"), muteBtn: $("muteBtn"),
+    reward: $("reward"), rewardMins: $("rewardMins"), rewardMinsHint: $("rewardMinsHint"),
+    rewardStart: $("rewardStart"), countdownBox: $("countdownBox"),
+    countdown: $("countdown"), countdownLabel: $("countdownLabel"),
+    startTimerBtn: $("startTimerBtn"), cancelTimerBtn: $("cancelTimerBtn"),
   };
 
   // reflect saved mute preference on the toggle
@@ -927,12 +1033,51 @@
   // ---------- Problem generation ----------
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
+  // Algebra: solve for x. ~30% of problems are two-step (a × x ± b = c); the
+  // rest are one-step across all four operations. Every form resolves to a
+  // single whole-number answer (the value of x) so it fits the number pad.
+  function makeAlgebra() {
+    if (Math.random() < 0.3) {
+      // two-step: a × x + b = c  (or − b), with c kept positive
+      const a = rand(2, 5), x = rand(2, 9);
+      state.answer = x;
+      if (Math.random() < 0.5) {
+        const b = rand(1, 9);
+        return `${a} × x + ${b} = ${a * x + b}`;
+      }
+      const b = rand(1, Math.min(9, a * x - 1));
+      return `${a} × x − ${b} = ${a * x - b}`;
+    }
+    // one-step, picked evenly across +, −, ×, ÷
+    switch (rand(1, 6)) {
+      case 1: { const x = rand(1, 12), b = rand(1, 12); state.answer = x; return `x + ${b} = ${x + b}`; }
+      case 2: { const x = rand(1, 12), b = rand(1, 12); state.answer = x; return `${b} + x = ${x + b}`; }
+      case 3: { const b = rand(1, 9), c = rand(1, 9); state.answer = b + c; return `x − ${b} = ${c}`; }
+      case 4: { const x = rand(1, 9), c = rand(1, 9); state.answer = x; return `${x + c} − x = ${c}`; }
+      case 5: { const a = rand(2, 9), x = rand(2, 9); state.answer = x; return `${a} × x = ${a * x}`; }
+      default: { const a = rand(2, 9), c = rand(2, 9); state.answer = a * c; return `x ÷ ${a} = ${c}`; }
+    }
+  }
+
   function newProblem() {
     let text;
     if (state.track === "add") {
       state.a = rand(1, 9); state.b = rand(1, 9);
       text = `${state.a} + ${state.b}`;
       state.answer = state.a + state.b;
+    } else if (state.track === "next") {
+      // counting practice: show a number 1-30, type the one that comes next.
+      state.a = rand(1, 30);
+      text = `${state.a} →  ?`;
+      state.answer = state.a + 1;
+    } else if (state.track === "count") {
+      // "count on": add only 1-3 to a starting number — a gentle step up from
+      // counting toward addition. Uses the same push-together blocks as add.
+      state.a = rand(2, 9); state.b = rand(1, 3);
+      text = `${state.a} + ${state.b}`;
+      state.answer = state.a + state.b;
+    } else if (state.track === "alg") {
+      text = makeAlgebra();
     } else if (state.track === "sub") {
       // single-digit take-away for the 5-year-old; keep the result >= 1 so
       // there's always something left to count after taking blocks away.
@@ -1038,7 +1183,7 @@
   function renderBlocks() {
     state.merged = false;
     state.taken = false;
-    if (state.track === "add") {
+    if (state.track === "add" || state.track === "count") {
       el.blocksArea.classList.remove("hidden");
       el.pushBtn.disabled = false;
       el.pushBtn.textContent = "👐 Push together";
@@ -1071,7 +1216,7 @@
   }
 
   function mergeTowers() {
-    if (state.merged || state.track !== "add") return;
+    if (state.merged || (state.track !== "add" && state.track !== "count")) return;
     state.merged = true;
     Sound.push();
 
@@ -1189,7 +1334,7 @@
         tower.style.transform = "";
         return;
       }
-      if (state.track === "add" && rectsOverlap(el.towerA, el.towerB)) mergeTowers();
+      if ((state.track === "add" || state.track === "count") && rectsOverlap(el.towerA, el.towerB)) mergeTowers();
       else tower.style.transform = ""; // snap back
     });
   }
@@ -1352,6 +1497,7 @@
   function startGame() {
     Sound.unlock();
     Sound.click();
+    clearRewardTimer();
     state.playerHp = PLAYER_MAX_HP;
     state.foeIndex = 0;
     state.busy = false;
@@ -1359,27 +1505,84 @@
     el.foeSprite.style.opacity = "1";
     setupFoe();
     renderHp();
-    el.battle.classList.toggle("with-blocks", state.track === "add" || state.track === "sub");
+    el.battle.classList.toggle("with-blocks", state.track === "add" || state.track === "sub" || state.track === "count");
     show(el.battle);
     newProblem();
   }
 
   function win() {
     stopTimer();
+    clearRewardTimer();
     el.endEmoji.textContent = "🏆";
     el.endTitle.textContent = "Victory!";
     el.endText.textContent = "You defeated every monster. You're a math hero!";
+    // earned iPad game time: a fun, variable 5–10 minute reward
+    state.earnedMins = rand(5, 10);
+    el.rewardMins.textContent = state.earnedMins;
+    el.rewardMinsHint.textContent = state.earnedMins;
+    el.reward.classList.remove("hidden");
+    el.rewardStart.classList.remove("hidden");
+    el.countdownBox.classList.add("hidden");
     Sound.win();
     show(el.end);
   }
 
   function gameOver() {
     stopTimer();
+    clearRewardTimer();
+    el.reward.classList.add("hidden");   // no reward time for a loss
     el.endEmoji.textContent = "💀";
     el.endTitle.textContent = "Game Over";
     el.endText.textContent = "The monster got you! Want to try again?";
     Sound.lose();
     show(el.end);
+  }
+
+  // ---------- iPad game-time countdown (win reward) ----------
+  function fmtClock(totalSec) {
+    const m = Math.floor(totalSec / 60), s = totalSec % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
+  function clearRewardTimer() {
+    if (state.countdownId) { clearInterval(state.countdownId); state.countdownId = null; }
+    Sound.stopAlarm();
+    el.countdownBox.classList.remove("ringing");
+  }
+
+  function startRewardTimer() {
+    Sound.unlock();
+    Sound.click();
+    el.rewardStart.classList.add("hidden");
+    el.countdownBox.classList.remove("hidden", "ringing");
+    el.cancelTimerBtn.textContent = "Cancel";
+    el.countdownLabel.textContent = "iPad time left";
+    el.countdown.textContent = fmtClock(state.earnedMins * 60);
+    // track against wall-clock end time so a delayed tick can't drift the total
+    state.countdownEnd = Date.now() + state.earnedMins * 60 * 1000;
+    const tick = () => {
+      const left = Math.max(0, Math.round((state.countdownEnd - Date.now()) / 1000));
+      el.countdown.textContent = fmtClock(left);
+      if (left <= 0) ringTimer();
+    };
+    state.countdownId = setInterval(tick, 250);
+  }
+
+  function ringTimer() {
+    if (state.countdownId) { clearInterval(state.countdownId); state.countdownId = null; }
+    el.countdown.textContent = "0:00";
+    el.countdownLabel.textContent = "⏰ TIME'S UP!";
+    el.countdownBox.classList.add("ringing");
+    el.cancelTimerBtn.textContent = "🔕 Stop alarm";
+    Sound.startAlarm();
+  }
+
+  // Cancel (mid-countdown) or silence the alarm, then reset to the start state.
+  function dismissRewardTimer() {
+    Sound.click();
+    clearRewardTimer();
+    el.countdownBox.classList.add("hidden");
+    el.rewardStart.classList.remove("hidden");
   }
 
   // ---------- Answer entry (on-screen pad + physical keyboard) ----------
@@ -1399,7 +1602,9 @@
 
   // ---------- Events ----------
   el.startBtn.addEventListener("click", startGame);
-  el.playAgainBtn.addEventListener("click", () => { Sound.click(); show(el.menu); });
+  el.playAgainBtn.addEventListener("click", () => { Sound.click(); clearRewardTimer(); show(el.menu); });
+  el.startTimerBtn.addEventListener("click", startRewardTimer);
+  el.cancelTimerBtn.addEventListener("click", dismissRewardTimer);
   el.attackBtn.addEventListener("click", playerAttack);
   el.keypad.addEventListener("click", (e) => {
     const b = e.target.closest("button.key");
